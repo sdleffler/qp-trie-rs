@@ -1310,9 +1310,9 @@ impl<K: ToOwned + Borrow<[u8]>, V> Trie<K, V> {
 
 
     /// Count the number of entries in the tree. This is currently slow - it traverses the entire
-    /// tree!
+    /// trie!
     ///
-    /// TODO: Speed this up by caching the size of the trie in relevant nodes.
+    /// TODO: Speed this up by tracking the size of the trie for each insert/removal.
     pub fn count(&self) -> usize {
         self.root.as_ref().map(Node::count).unwrap_or(0)
     }
