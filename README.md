@@ -135,6 +135,11 @@ test bench_trie_insert     ... bench:  57,935,037 ns/iter (+/- 16,538,104)
 test result: ok. 0 passed; 0 failed; 0 ignored; 8 measured; 0 filtered out
 ```
 
+## Future work
+
+- Benchmark against `FxHasher`/`FnvHasher` to get a better idea of how `Trie` compares against `HashMap`.
+- Add wrapper types for `String` and `str` to make working with strings easier.
+
 ## License
 
 The `qp-trie-rs` crate is licensed under the MPL v2.0.
