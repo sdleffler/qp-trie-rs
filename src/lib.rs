@@ -756,26 +756,30 @@ impl<K: ToOwned + Borrow<[u8]>, V> Node<K, V> {
         match *self {
             Node::Leaf(..) => unsafe { debug_unreachable!() },
             Node::Branch(..) => {
-                let val = loop {
+                let leaf = {
                     let branch = self.unwrap_branch_mut();
                     let index = branch.index(key);
 
                     match branch.child_mut(key) {
-                        Some(child @ &mut Node::Branch(..)) => break child.remove_validated(key),
+                        // Removing a leaf means waiting for `self` to be available so we can try
+                        // to compress. Also we can't remove in this match arm since `branch` is
+                        // borrowed.
                         Some(&mut Node::Leaf(ref leaf)) if leaf.key_slice() == key => {}
 
+                        Some(child @ &mut Node::Branch(..)) => return child.remove_validated(key),
                         _ => return None,
-                    }
+                    };
 
-                    break Some(branch.remove(index).unwrap_leaf());
+                    branch.remove(index).unwrap_leaf()
                 };
 
+                // We removed a leaf. The branch's arity has reduced - we may be able to compress.
                 if self.unwrap_branch_mut().is_singleton() {
                     let node = self.unwrap_branch_mut().clear_last();
                     mem::replace(self, node);
                 }
 
-                val
+                Some(leaf)
             }
         }
     }
@@ -808,23 +812,24 @@ impl<K: ToOwned + Borrow<[u8]>, V> Node<K, V> {
         match *self {
             Node::Leaf(..) => unsafe { debug_unreachable!() },
             Node::Branch(..) => {
-                let prefix_node = loop {
+                let prefix_node = {
                     let branch = self.unwrap_branch_mut();
                     let index = branch.index(prefix);
 
                     match branch.child_mut(prefix) {
+                        // Similar borrow logistics to `remove_validated`.
                         Some(&mut Node::Leaf(ref l)) if l.key_slice().starts_with(prefix) => {}
                         Some(&mut Node::Branch(ref child_branch))
                             if child_branch.choice >= prefix.len() * 2 => {}
 
                         Some(child @ &mut Node::Branch(..)) => {
-                            break child.remove_prefix_validated(prefix)
+                            return child.remove_prefix_validated(prefix)
                         }
 
                         _ => return None,
                     }
 
-                    break Some(branch.remove(index));
+                    branch.remove(index)
                 };
 
                 if self.unwrap_branch_mut().is_singleton() {
@@ -832,7 +837,7 @@ impl<K: ToOwned + Borrow<[u8]>, V> Node<K, V> {
                     mem::replace(self, node);
                 }
 
-                prefix_node
+                Some(prefix_node)
             }
         }
     }
@@ -994,8 +999,7 @@ pub enum Entry<'a, K: 'a + ToOwned, V: 'a> {
 }
 
 
-impl<'a, K: 'a + ToOwned + Borrow<[u8]>, V: 'a> Entry<'a, K, V>
-{
+impl<'a, K: 'a + ToOwned + Borrow<[u8]>, V: 'a> Entry<'a, K, V> {
     /// Get a mutable reference to a value already in the trie, if it exists - otherwise, insert a
     /// given default value, and return a mutable reference to its new location in the trie.
     pub fn or_insert(self, default: V) -> &'a mut V {
@@ -1040,8 +1044,7 @@ enum VacantEntryInner<'a, K: 'a + ToOwned, V: 'a> {
 }
 
 
-impl<'a, K: 'a + ToOwned + Borrow<[u8]>, V: 'a> VacantEntry<'a, K, V>
-{
+impl<'a, K: 'a + ToOwned + Borrow<[u8]>, V: 'a> VacantEntry<'a, K, V> {
     /// Get a reference to the key associated with this vacant entry.
     pub fn key(&self) -> &K {
         &self.key
@@ -1362,8 +1365,7 @@ impl<K: ToOwned + Borrow<[u8]>, V> Trie<K, V> {
 
 
     /// Get the corresponding entry for the given key.
-    pub fn entry(&mut self, key: K) -> Entry<K, V>
-    {
+    pub fn entry(&mut self, key: K) -> Entry<K, V> {
         match self.root {
             Some(..) => {
                 let (exemplar_ptr, mismatch) = {
