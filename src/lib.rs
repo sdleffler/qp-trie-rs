@@ -10,6 +10,7 @@ extern crate quickcheck;
 extern crate rand;
 
 mod entry;
+mod iter;
 mod node;
 mod sparse;
 mod trie;
