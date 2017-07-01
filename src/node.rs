@@ -15,6 +15,17 @@ pub struct Leaf<K: ToOwned, V> {
 }
 
 
+impl<K: ToOwned, V: Clone> Clone for Leaf<K, V> {
+    #[inline]
+    fn clone(&self) -> Self {
+        Leaf {
+            key: self.key.borrow().to_owned(),
+            val: self.val.clone(),
+        }
+    }
+}
+
+
 impl<K: ToOwned, V> Leaf<K, V> {
     #[inline]
     pub fn new(key: K, val: V) -> Leaf<K, V> {
@@ -43,6 +54,17 @@ pub struct Branch<K: ToOwned, V> {
     // to different values of the nybble at the choice point for given keys.
     choice: usize,
     entries: Sparse<Node<K, V>>,
+}
+
+
+impl<K: ToOwned, V: Clone> Clone for Branch<K, V> {
+    #[inline]
+    fn clone(&self) -> Self {
+        Branch {
+            choice: self.choice,
+            entries: self.entries.clone(),
+        }
+    }
 }
 
 
@@ -217,7 +239,7 @@ impl<K: ToOwned, V> Branch<K, V> {
         self.entries.iter().map(Node::count).sum()
     }
 
-    
+
     #[inline]
     pub fn iter(&self) -> ::std::slice::Iter<Node<K, V>> {
         self.entries.iter()
@@ -235,6 +257,7 @@ impl<K: ToOwned, V> IntoIterator for Branch<K, V> {
     type IntoIter = ::std::vec::IntoIter<Node<K, V>>;
     type Item = Node<K, V>;
 
+    #[inline]
     fn into_iter(self) -> Self::IntoIter {
         self.entries.into_iter()
     }
@@ -245,6 +268,17 @@ impl<K: ToOwned, V> IntoIterator for Branch<K, V> {
 pub enum Node<K: ToOwned, V> {
     Leaf(Leaf<K, V>),
     Branch(Branch<K, V>),
+}
+
+
+impl<K: ToOwned, V: Clone> Clone for Node<K, V> {
+    #[inline]
+    fn clone(&self) -> Self {
+        match *self {
+            Node::Leaf(ref leaf) => Node::Leaf(leaf.clone()),
+            Node::Branch(ref branch) => Node::Branch(branch.clone()),
+        }
+    }
 }
 
 
@@ -677,7 +711,7 @@ impl<K: ToOwned, V> Node<K, V> {
 
 
     pub fn iter(&self) -> Iter<K, V> {
-        Iter::new(self)       
+        Iter::new(self)
     }
 
 

@@ -73,6 +73,13 @@ pub struct Trie<K: ToOwned, V> {
 }
 
 
+impl<K: ToOwned, V: Clone> Clone for Trie<K, V> {
+    fn clone(&self) -> Self {
+        Trie { root: self.root.clone() }
+    }
+}
+
+
 impl<K: fmt::Debug + ToOwned, V: fmt::Debug> fmt::Debug for Trie<K, V> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.root {
@@ -107,6 +114,18 @@ impl<K: ToOwned + Borrow<[u8]>, V> FromIterator<(K, V)> for Trie<K, V> {
         }
 
         trie
+    }
+}
+
+
+impl<K: ToOwned + Borrow<[u8]>, V> Extend<(K, V)> for Trie<K, V> {
+    fn extend<I>(&mut self, iterable: I)
+    where
+        I: IntoIterator<Item = (K, V)>,
+    {
+        for (key, val) in iterable {
+            self.insert(key, val);
+        }
     }
 }
 
