@@ -25,11 +25,11 @@ use node::{Node, Leaf};
 ///
 /// let mut trie = Trie::new();
 ///
-/// trie.insert("abbc".as_bytes(), 1);
-/// trie.insert("abcd".as_bytes(), 2);
-/// trie.insert("bcde".as_bytes(), 3);
-/// trie.insert("bdde".as_bytes(), 4);
-/// trie.insert("bddf".as_bytes(), 5);
+/// trie.insert(b"abbc", 1);
+/// trie.insert(b"abcd", 2);
+/// trie.insert(b"bcde", 3);
+/// trie.insert(b"bdde", 4);
+/// trie.insert(b"bddf", 5);
 ///
 /// // This will print the following string:
 /// //
@@ -42,31 +42,31 @@ use node::{Node, Leaf};
 /// println!("{:?}", trie);
 /// # assert_eq!(format!("{:?}", trie), "{[97, 98, 98, 99]: 1, [97, 98, 99, 100]: 2, [98, 99, 100, 101]: 3, [98, 100, 100, 101]: 4, [98, 100, 100, 102]: 5}");
 ///
-/// assert_eq!(trie.get("abcd".as_bytes()), Some(&2));
-/// assert_eq!(trie.get("bcde".as_bytes()), Some(&3));
+/// assert_eq!(trie.get(b"abcd"), Some(&2));
+/// assert_eq!(trie.get(b"bcde"), Some(&3));
 ///
 /// // We can take subtries, removing all elements of the trie with a given prefix.
-/// let mut subtrie = trie.remove_prefix("b".as_bytes());
+/// let mut subtrie = trie.remove_prefix(b"b");
 ///
-/// assert_eq!(trie.get("abbc".as_bytes()), Some(&1));
-/// assert_eq!(trie.get("abcd".as_bytes()), Some(&2));
-/// assert_eq!(trie.get("bcde".as_bytes()), None);
-/// assert_eq!(trie.get("bdde".as_bytes()), None);
-/// assert_eq!(trie.get("bddf".as_bytes()), None);
+/// assert_eq!(trie.get(b"abbc"), Some(&1));
+/// assert_eq!(trie.get(b"abcd"), Some(&2));
+/// assert_eq!(trie.get(b"bcde"), None);
+/// assert_eq!(trie.get(b"bdde"), None);
+/// assert_eq!(trie.get(b"bddf"), None);
 ///
-/// assert_eq!(subtrie.get("abbc".as_bytes()), None);
-/// assert_eq!(subtrie.get("abcd".as_bytes()), None);
-/// assert_eq!(subtrie.get("bcde".as_bytes()), Some(&3));
-/// assert_eq!(subtrie.get("bdde".as_bytes()), Some(&4));
-/// assert_eq!(subtrie.get("bddf".as_bytes()), Some(&5));
+/// assert_eq!(subtrie.get(b"abbc"), None);
+/// assert_eq!(subtrie.get(b"abcd"), None);
+/// assert_eq!(subtrie.get(b"bcde"), Some(&3));
+/// assert_eq!(subtrie.get(b"bdde"), Some(&4));
+/// assert_eq!(subtrie.get(b"bddf"), Some(&5));
 ///
 /// // We can remove elements:
-/// assert_eq!(trie.remove("abbc".as_bytes()), Some(1));
-/// assert_eq!(trie.get("abbc".as_bytes()), None);
+/// assert_eq!(trie.remove(b"abbc"), Some(1));
+/// assert_eq!(trie.get(b"abbc"), None);
 ///
 /// // We can mutate values:
-/// *subtrie.get_mut("bdde".as_bytes()).unwrap() = 0;
-/// assert_eq!(subtrie.get("bdde".as_bytes()), Some(&0));
+/// *subtrie.get_mut(b"bdde").unwrap() = 0;
+/// assert_eq!(subtrie.get(b"bdde"), Some(&0));
 /// ```
 pub struct Trie<K: ToOwned, V> {
     root: Option<Node<K, V>>,
