@@ -1,0 +1,30 @@
+[package]
+authors = ["Sean Leffler <sean@errno.com>"]
+name = "qp-trie"
+version = "0.1.0"
+
+description = "An idiomatic and fast QP-trie implementation in pure Rust, written with an emphasis on safety."
+
+documentation = "https://docs.rs/qp-trie"
+homepage = "https://github.com/sdleffler/qp-trie-rs"
+repository = "https://github.com/sdleffler/qp-trie-rs"
+
+readme = "README.md"
+
+keywords = ["trie", "radix", "map", "key", "value"]
+
+categories = ["data-structures", "text-processing", "rust-patterns"]
+
+license = "MPL-2.0"
+
+[badges]
+travis-ci = { repository = "sdleffler/qp-trie-rs", branch = "master" }
+
+[dependencies]
+debug_unreachable = "0.1.1"
+unreachable = "1.0.0"
+
+[dev-dependencies]
+qptrie = "0.2.2"
+quickcheck = "0.4.1"
+rand = "0.3.15"
