@@ -10,13 +10,13 @@ extern crate quickcheck;
 extern crate rand;
 
 mod entry;
-mod iter;
 mod node;
 mod sparse;
 mod trie;
 mod util;
 
 pub use entry::{Entry, OccupiedEntry, VacantEntry};
+pub use iter::{Iter, IterMut, IntoIter};
 pub use trie::Trie;
 
 
