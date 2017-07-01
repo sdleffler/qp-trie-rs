@@ -119,6 +119,8 @@ Benchmarks can be reproduced using `cargo bench`. The Rust version used was
 benchmarks are consistent in their outputs but I selected the lowest variance
 results to display here.
 
+Benchmarks named `exotrie` are using the `qptrie::Trie` implementation.
+
 ```
 running 8 tests
 test bench_btreemap_get    ... bench: 114,172,574 ns/iter (+/- 10,890,962)
