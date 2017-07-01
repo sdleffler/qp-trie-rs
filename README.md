@@ -31,7 +31,7 @@ for use as keys. Here's a naive, simple example of putting 9 2-element byte arra
 into the trie, and then removing all byte arrays which begin with "1":
 
 ```rust
-# use qp_trie::Trie;
+use qp_trie::Trie;
 
 let mut trie = Trie::new();
 
@@ -51,7 +51,7 @@ assert!(trie.iter().all(|(&key, _)| key[0] != 1));
 Here's a slightly less naive method, which is actually vastly more efficient:
 
 ```rust
-# use qp_trie::Trie;
+use qp_trie::Trie;
 
 let mut trie = Trie::new();
 
@@ -72,7 +72,7 @@ are extremely efficient when dealing with anything related to prefixes. This
 extends to iteration over prefixes:
 
 ```rust
-# use qp_trie::Trie;
+use qp_trie::Trie;
 
 let mut trie = Trie::new();
 
