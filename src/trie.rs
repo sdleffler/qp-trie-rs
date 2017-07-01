@@ -130,6 +130,23 @@ impl<K: ToOwned + Borrow<[u8]>, V> Extend<(K, V)> for Trie<K, V> {
 }
 
 
+impl<K: ToOwned, V> Default for Trie<K, V> {
+    fn default() -> Self {
+        Trie { root: None }
+    }
+}
+
+
+impl<K: ToOwned + Borrow<[u8]>, V: PartialEq> PartialEq for Trie<K, V> {
+    fn eq(&self, rhs: &Trie<K, V>) -> bool {
+        self.root == rhs.root
+    }
+}
+
+
+impl<K: ToOwned + Borrow<[u8]>, V: Eq> Eq for Trie<K, V> {}
+
+
 impl<K: ToOwned + Borrow<[u8]>, V> Trie<K, V> {
     /// Create a new, empty trie.
     pub fn new() -> Trie<K, V> {

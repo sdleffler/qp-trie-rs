@@ -7,7 +7,7 @@ use unreachable::UncheckedOptionExt;
 // A sparse array, holding up to 17 elements, indexed by nybbles with a special exception for
 // elements which are shorter than the "choice point" of the branch node which holds this sparse
 // array. This special exception is the "head".
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Sparse<T> {
     index: u32,
     entries: Vec<T>,

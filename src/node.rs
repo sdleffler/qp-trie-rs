@@ -26,6 +26,14 @@ impl<K: ToOwned, V: Clone> Clone for Leaf<K, V> {
 }
 
 
+impl<K: ToOwned + Borrow<[u8]>, V: PartialEq> PartialEq for Leaf<K, V> {
+    #[inline]
+    fn eq(&self, rhs: &Leaf<K, V>) -> bool {
+        self.key_slice() == rhs.key_slice()
+    }
+}
+
+
 impl<K: ToOwned, V> Leaf<K, V> {
     #[inline]
     pub fn new(key: K, val: V) -> Leaf<K, V> {
@@ -54,6 +62,14 @@ pub struct Branch<K: ToOwned, V> {
     // to different values of the nybble at the choice point for given keys.
     choice: usize,
     entries: Sparse<Node<K, V>>,
+}
+
+
+impl<K: ToOwned + Borrow<[u8]>, V: PartialEq> PartialEq for Branch<K, V> {
+    #[inline]
+    fn eq(&self, rhs: &Branch<K, V>) -> bool {
+        self.choice == rhs.choice && self.entries == rhs.entries
+    }
 }
 
 
@@ -268,6 +284,18 @@ impl<K: ToOwned, V> IntoIterator for Branch<K, V> {
 pub enum Node<K: ToOwned, V> {
     Leaf(Leaf<K, V>),
     Branch(Branch<K, V>),
+}
+
+
+impl<K: ToOwned + Borrow<[u8]>, V: PartialEq> PartialEq for Node<K, V> {
+    #[inline]
+    fn eq(&self, rhs: &Node<K, V>) -> bool {
+        match (self, rhs) {
+            (&Node::Leaf(ref l), &Node::Leaf(ref r)) => l == r,
+            (&Node::Branch(ref l), &Node::Branch(ref r)) => l == r,
+            _ => false,
+        }
+    }
 }
 
 
