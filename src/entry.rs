@@ -144,8 +144,8 @@ impl<'a, K: 'a + ToOwned + Borrow<[u8]>, V: 'a> VacantEntry<'a, K, V> {
 
                 *root = Some(Node::Leaf(Leaf::new(self.key, val)));
                 let root_mut_opt = root.as_mut();
-                let node_mut = unsafe { root_mut_opt.unchecked_unwrap() };
-                &mut node_mut.unwrap_leaf_mut().val
+                let leaf_mut = unsafe { root_mut_opt.unchecked_unwrap().unwrap_leaf_mut() };
+                &mut leaf_mut.val
             }
             VacantEntryInner::Internal(graft, graft_nybble, node) => {
                 node.insert_with_graft_point(graft, graft_nybble, self.key, val)
@@ -179,7 +179,7 @@ impl<'a, K: 'a + ToOwned + Borrow<[u8]>, V: 'a> OccupiedEntry<'a, K, V> {
         match *root {
             Some(Node::Leaf(..)) => {
                 let leaf_opt = root.take();
-                let leaf = unsafe { leaf_opt.unchecked_unwrap() }.unwrap_leaf();
+                let leaf = unsafe { leaf_opt.unchecked_unwrap().unwrap_leaf() };
 
                 debug_assert!(leaf.key_slice() == self.key().borrow());
                 (leaf.key, leaf.val)

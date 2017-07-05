@@ -212,21 +212,21 @@ impl<K: ToOwned + Borrow<[u8]>, V> Branch<K, V> {
     // Convenience method for inserting a leaf into the branch's sparse array.
     #[inline]
     pub fn insert_leaf(&mut self, leaf: Leaf<K, V>) -> &mut Leaf<K, V> {
-        self.entries
-            .insert(
-                nybble_index(self.choice, leaf.key_slice()),
-                Node::Leaf(leaf),
-            )
-            .unwrap_leaf_mut()
+        let node_mut = self.entries.insert(
+            nybble_index(self.choice, leaf.key_slice()),
+            Node::Leaf(leaf),
+        );
+
+        unsafe { node_mut.unwrap_leaf_mut() }
     }
 
 
     // Convenience method for inserting a branch into the branch's sparse array.
     #[inline]
     pub fn insert_branch(&mut self, index: u8, branch: Branch<K, V>) -> &mut Branch<K, V> {
-        self.entries
-            .insert(index, Node::Branch(branch))
-            .unwrap_branch_mut()
+        let node_mut = self.entries.insert(index, Node::Branch(branch));
+
+        unsafe { node_mut.unwrap_branch_mut() }
     }
 
 
@@ -340,42 +340,42 @@ impl<K: ToOwned + Borrow<[u8]>, V> Node<K, V> {
     // likely to be statically eliminated.)
 
     #[inline]
-    pub fn unwrap_leaf(self) -> Leaf<K, V> {
+    pub unsafe fn unwrap_leaf(self) -> Leaf<K, V> {
         match self {
             Node::Leaf(leaf) => leaf,
-            Node::Branch(..) => unsafe { debug_unreachable!() },
+            Node::Branch(..) => debug_unreachable!(),
         }
     }
 
     #[inline]
-    pub fn unwrap_leaf_ref(&self) -> &Leaf<K, V> {
+    pub unsafe fn unwrap_leaf_ref(&self) -> &Leaf<K, V> {
         match *self {
             Node::Leaf(ref leaf) => leaf,
-            Node::Branch(..) => unsafe { debug_unreachable!() },
+            Node::Branch(..) => debug_unreachable!(),
         }
     }
 
     #[inline]
-    pub fn unwrap_leaf_mut(&mut self) -> &mut Leaf<K, V> {
+    pub unsafe fn unwrap_leaf_mut(&mut self) -> &mut Leaf<K, V> {
         match *self {
             Node::Leaf(ref mut leaf) => leaf,
-            Node::Branch(..) => unsafe { debug_unreachable!() },
+            Node::Branch(..) => debug_unreachable!(),
         }
     }
 
     #[inline]
-    pub fn unwrap_branch_ref(&self) -> &Branch<K, V> {
+    pub unsafe fn unwrap_branch_ref(&self) -> &Branch<K, V> {
         match *self {
-            Node::Leaf(..) => unsafe { debug_unreachable!() },
+            Node::Leaf(..) => debug_unreachable!(),
             Node::Branch(ref branch) => branch,
         }
     }
 
 
     #[inline]
-    pub fn unwrap_branch_mut(&mut self) -> &mut Branch<K, V> {
+    pub unsafe fn unwrap_branch_mut(&mut self) -> &mut Branch<K, V> {
         match *self {
-            Node::Leaf(..) => unsafe { debug_unreachable!() },
+            Node::Leaf(..) => debug_unreachable!(),
             Node::Branch(ref mut branch) => branch,
         }
     }
@@ -441,7 +441,10 @@ impl<K: ToOwned + Borrow<[u8]>, V> Node<K, V> {
                     self
                 } else {
                     let child_opt = branch.child(prefix);
+
+                    // unsafe: child must exist in the trie - prefix'd nodes must exist.
                     let child = unsafe { child_opt.unchecked_unwrap() };
+
                     child.get_prefix_validated(prefix)
                 }
             }
@@ -473,10 +476,17 @@ impl<K: ToOwned + Borrow<[u8]>, V> Node<K, V> {
         match *self {
             Node::Leaf(..) => self,
             Node::Branch(..) => {
-                if self.unwrap_branch_mut().choice >= prefix.len() * 2 {
+                // unsafe: self has been match'd as a branch.
+                if unsafe { self.unwrap_branch_mut() }.choice >= prefix.len() * 2 {
                     self
                 } else {
-                    let child_opt = self.unwrap_branch_mut().child_mut(prefix);
+                    // unsafe: self has been match'd as a branch.
+                    let branch_mut = unsafe { self.unwrap_branch_mut() };
+
+                    let child_opt = branch_mut.child_mut(prefix);
+
+                    // unsafe: child must exist as there must exist nodes with the given prefix in
+                    // the trie.
                     let child = unsafe { child_opt.unchecked_unwrap() };
 
                     child.get_prefix_validated_mut(prefix)
@@ -491,7 +501,11 @@ impl<K: ToOwned + Borrow<[u8]>, V> Node<K, V> {
     pub fn get_prefix_mut<'a>(&'a mut self, prefix: &[u8]) -> Option<&'a mut Node<K, V>> {
         match *self {
             Node::Leaf(..) => {
-                if self.unwrap_leaf_ref().key_slice().starts_with(prefix) {
+                // unsafe: self has been match'd as a leaf.
+                if unsafe { self.unwrap_leaf_ref() }.key_slice().starts_with(
+                    prefix,
+                )
+                {
                     Some(self)
                 } else {
                     None
@@ -500,7 +514,9 @@ impl<K: ToOwned + Borrow<[u8]>, V> Node<K, V> {
 
             Node::Branch(..) => {
                 let has_prefix = {
-                    let exemplar = self.unwrap_branch_ref().get_exemplar(prefix);
+                    // unsafe: self has been match'd as a branch.
+                    let branch_ref = unsafe { self.unwrap_branch_ref() };
+                    let exemplar = branch_ref.get_exemplar(prefix);
 
                     exemplar.key_slice().starts_with(prefix)
                 };
@@ -546,7 +562,9 @@ impl<K: ToOwned + Borrow<[u8]>, V> Node<K, V> {
 
             _ => {
                 let node = mem::replace(self, Node::Branch(Branch::new(graft)));
-                let graft_branch = self.unwrap_branch_mut();
+
+                // unsafe: we've just replaced self with a branch.
+                let graft_branch = unsafe { self.unwrap_branch_mut() };
 
                 match node {
                     Node::Leaf(leaf) => {
@@ -567,12 +585,20 @@ impl<K: ToOwned + Borrow<[u8]>, V> Node<K, V> {
     pub fn insert(&mut self, key: K, val: V) -> Option<V> {
         match *self {
             Node::Leaf(..) => {
-                match nybble_mismatch(self.unwrap_leaf_ref().key_slice(), key.borrow()) {
-                    None => Some(mem::replace(&mut self.unwrap_leaf_mut().val, val)),
+                // unsafe: self has been match'd as leaf.
+                match nybble_mismatch(unsafe { self.unwrap_leaf_ref() }.key_slice(), key.borrow()) {
+                    None => Some(mem::replace(
+                        &mut unsafe { self.unwrap_leaf_mut() }.val,
+                        val,
+                    )),
                     Some(mismatch) => {
-                        let leaf = mem::replace(self, Node::Branch(Branch::new(mismatch)))
-                            .unwrap_leaf();
-                        let branch = self.unwrap_branch_mut();
+                        let node = mem::replace(self, Node::Branch(Branch::new(mismatch)));
+
+                        // unsafe: self was match'd as a leaf, and node is self moved out.
+                        let leaf = unsafe { node.unwrap_leaf() };
+
+                        // unsafe: self has just been replaced with a branch.
+                        let branch = unsafe { self.unwrap_branch_mut() };
 
                         branch.insert_leaf(Leaf::new(key, val));
                         branch.insert_leaf(leaf);
@@ -611,7 +637,8 @@ impl<K: ToOwned + Borrow<[u8]>, V> Node<K, V> {
             Node::Leaf(..) => unsafe { debug_unreachable!() },
             Node::Branch(..) => {
                 let leaf = {
-                    let branch = self.unwrap_branch_mut();
+                    // unsafe: self has been match'd as branch.
+                    let branch = unsafe { self.unwrap_branch_mut() };
                     let index = branch.index(key);
 
                     match branch.child_mut(key) {
@@ -624,12 +651,19 @@ impl<K: ToOwned + Borrow<[u8]>, V> Node<K, V> {
                         _ => return None,
                     };
 
-                    branch.remove(index).unwrap_leaf()
+                    let node = branch.remove(index);
+                    unsafe { node.unwrap_leaf() }
                 };
 
                 // We removed a leaf. The branch's arity has reduced - we may be able to compress.
-                if self.unwrap_branch_mut().is_singleton() {
-                    let node = self.unwrap_branch_mut().clear_last();
+                // unsafe: self hass been match'd as a branch.
+                if unsafe { self.unwrap_branch_mut() }.is_singleton() {
+                    let node = {
+                        // unsafe: self has been match'd as a branch.
+                        let branch_mut = unsafe { self.unwrap_branch_mut() };
+
+                        branch_mut.clear_last()
+                    };
                     mem::replace(self, node);
                 }
 
@@ -643,10 +677,12 @@ impl<K: ToOwned + Borrow<[u8]>, V> Node<K, V> {
     pub fn remove(root: &mut Option<Node<K, V>>, key: &[u8]) -> Option<Leaf<K, V>> {
         match *root {
             Some(Node::Leaf(..))
-                if unsafe { root.as_ref().unchecked_unwrap() }
-                       .unwrap_leaf_ref()
+                // unsafe: root has been match'd as some branch.
+                if unsafe { root.as_ref().unchecked_unwrap().unwrap_leaf_ref() }
                        .key_slice() == key => {
-                Some(unsafe { root.take().unchecked_unwrap() }.unwrap_leaf())
+
+                // unsafe: same rationale.
+                Some(unsafe { root.take().unchecked_unwrap().unwrap_leaf() })
             }
 
             Some(ref mut node @ Node::Branch(..)) => node.remove_validated(key),
@@ -667,7 +703,8 @@ impl<K: ToOwned + Borrow<[u8]>, V> Node<K, V> {
             Node::Leaf(..) => unsafe { debug_unreachable!() },
             Node::Branch(..) => {
                 let prefix_node = {
-                    let branch = self.unwrap_branch_mut();
+                    // unsafe: self has been match'd as branch.
+                    let branch = unsafe { self.unwrap_branch_mut() };
                     let index = branch.index(prefix);
 
                     match branch.child_mut(prefix) {
@@ -686,8 +723,10 @@ impl<K: ToOwned + Borrow<[u8]>, V> Node<K, V> {
                     branch.remove(index)
                 };
 
-                if self.unwrap_branch_mut().is_singleton() {
-                    let node = self.unwrap_branch_mut().clear_last();
+                // unsafe: self has been match'd as branch.
+                if unsafe { self.unwrap_branch_mut() }.is_singleton() {
+                    // unsafe: same rationale.
+                    let node = unsafe { self.unwrap_branch_mut() }.clear_last();
                     mem::replace(self, node);
                 }
 
@@ -702,19 +741,22 @@ impl<K: ToOwned + Borrow<[u8]>, V> Node<K, V> {
     pub fn remove_prefix(root: &mut Option<Node<K, V>>, prefix: &[u8]) -> Option<Node<K, V>> {
         match *root {
             Some(Node::Leaf(..))
-                if unsafe { root.as_ref().unchecked_unwrap() }
-                       .unwrap_leaf_ref()
+                // unsafe: root has been matched as some leaf.
+                if unsafe { root.as_ref().unchecked_unwrap().unwrap_leaf_ref() }
                        .key_slice()
                        .starts_with(prefix) => root.take(),
 
             Some(Node::Branch(..))
-                if unsafe { root.as_ref().unchecked_unwrap() }
-                       .unwrap_branch_ref()
+                // unsafe: root has been matched as some branch.
+                if unsafe { root.as_ref().unchecked_unwrap().unwrap_branch_ref() }
+                       
                        .get_exemplar(prefix)
                        .key_slice()
                        .starts_with(prefix) => {
-                if unsafe { root.as_ref().unchecked_unwrap() }
-                    .unwrap_branch_ref()
+
+                // unsafe: same rationale.
+                if unsafe { root.as_ref().unchecked_unwrap().unwrap_branch_ref() }
+                    
                     .choice >= prefix.len()
                 {
                     root.take()
