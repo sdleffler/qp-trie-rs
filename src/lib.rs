@@ -20,6 +20,7 @@ mod util;
 pub use entry::{Entry, OccupiedEntry, VacantEntry};
 pub use iter::{Iter, IterMut, IntoIter};
 pub use trie::Trie;
+pub use subtrie::SubTrie;
 
 
 #[cfg(test)]
