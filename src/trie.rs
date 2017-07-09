@@ -6,6 +6,7 @@ use std::ops::{Index, IndexMut};
 use entry::{make_entry, Entry};
 use iter::{Iter, IterMut, IntoIter};
 use node::{Node, Leaf};
+use subtrie::SubTrie;
 
 /// A QP-trie. QP stands for - depending on who you ask - either "quelques-bits popcount" or
 /// "quad-bit popcount". In any case, the fact of the matter is that this is a compressed radix
@@ -191,6 +192,16 @@ impl<K: ToOwned + Borrow<[u8]>, V> Trie<K, V> {
         }) {
             Some(node) => IterMut::new(node),
             None => IterMut::default(),
+        }
+    }
+
+
+    /// Get an immutable view into the trie, providing only values keyed with the given prefix.
+    pub fn subtrie<L: Borrow<[u8]>>(&self, prefix: L) -> SubTrie<K, V> {
+        SubTrie {
+            root: self.root.as_ref().and_then(
+                |node| node.get_prefix(prefix.borrow()),
+            ),
         }
     }
 

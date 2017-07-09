@@ -10,7 +10,7 @@ pub struct IntoIter<K: ToOwned, V> {
 
 
 impl<K: ToOwned, V> IntoIter<K, V> {
-    pub fn new(node: Node<K, V>) -> IntoIter<K, V> {
+    pub(crate) fn new(node: Node<K, V>) -> IntoIter<K, V> {
         IntoIter { stack: vec![node] }
     }
 }

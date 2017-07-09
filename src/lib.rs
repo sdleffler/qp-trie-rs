@@ -13,6 +13,7 @@ mod entry;
 mod iter;
 mod node;
 mod sparse;
+mod subtrie;
 mod trie;
 mod util;
 
@@ -136,8 +137,9 @@ mod test {
 
             let filtered: HashMap<&[u8], u64> = trie.iter().filter_map(|(&key, &val)| if key.starts_with(&prefix[..]) { Some((key, val)) } else { None }).collect();
             let prefixed: HashMap<&[u8], u64> = trie.iter_prefix(&prefix[..]).map(|(&key, &val)| (key, val)).collect();
+            let subtried: HashMap<&[u8], u64> = trie.subtrie(&prefix[..]).iter().map(|(&key, &val)| (key, val)).collect();
 
-            filtered == prefixed
+            filtered == prefixed && filtered == subtried
         }
 
         fn prefix_sets_mut(prefix: Vec<u8>, elts: Vec<(Vec<u8>, u64)>) -> bool {
