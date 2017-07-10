@@ -6,12 +6,12 @@ use iter::Iter;
 use node::Node;
 
 
-pub struct SubTrie<'a, K: 'a + ToOwned, V: 'a> {
+pub struct SubTrie<'a, K: 'a, V: 'a> {
     pub(crate) root: Option<&'a Node<K, V>>,
 }
 
 
-impl<'a, K: fmt::Debug + ToOwned, V: fmt::Debug> fmt::Debug for SubTrie<'a, K, V> {
+impl<'a, K: fmt::Debug, V: fmt::Debug> fmt::Debug for SubTrie<'a, K, V> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.root {
             Some(node) => f.debug_map().entries(node.iter()).finish(),
@@ -21,7 +21,7 @@ impl<'a, K: fmt::Debug + ToOwned, V: fmt::Debug> fmt::Debug for SubTrie<'a, K, V
 }
 
 
-impl<'a, K: 'a + ToOwned, V: 'a> IntoIterator for SubTrie<'a, K, V> {
+impl<'a, K: 'a, V: 'a> IntoIterator for SubTrie<'a, K, V> {
     type IntoIter = Iter<'a, K, V>;
     type Item = (&'a K, &'a V);
 
@@ -31,7 +31,7 @@ impl<'a, K: 'a + ToOwned, V: 'a> IntoIterator for SubTrie<'a, K, V> {
 }
 
 
-impl<'a, K: ToOwned + Borrow<[u8]>, V> SubTrie<'a, K, V> {
+impl<'a, K: Borrow<[u8]>, V> SubTrie<'a, K, V> {
     pub fn iter(&self) -> Iter<K, V> {
         match self.root {
             Some(node) => node.iter(),
@@ -63,7 +63,7 @@ impl<'a, K: ToOwned + Borrow<[u8]>, V> SubTrie<'a, K, V> {
 }
 
 
-impl<'a, K: ToOwned + Borrow<[u8]>, V, L: Borrow<[u8]>> Index<L> for SubTrie<'a, K, V> {
+impl<'a, K: Borrow<[u8]>, V, L: Borrow<[u8]>> Index<L> for SubTrie<'a, K, V> {
     type Output = V;
 
     fn index(&self, key: L) -> &V {

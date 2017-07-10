@@ -8,7 +8,10 @@ use node::{Node, Leaf};
 use util::nybble_get_mismatch;
 
 
-pub fn make_entry<'a, K: 'a + Borrow<[u8]> + ToOwned, V: 'a>(key: K, root: &'a mut Option<Node<K, V>>) -> Entry<'a, K, V> {
+pub fn make_entry<'a, K: 'a + Borrow<[u8]>, V: 'a>(
+    key: K,
+    root: &'a mut Option<Node<K, V>>,
+) -> Entry<'a, K, V> {
     match *root {
         Some(..) => Entry::nonempty(key, root),
         None => Entry::empty(key, root),
@@ -17,13 +20,13 @@ pub fn make_entry<'a, K: 'a + Borrow<[u8]> + ToOwned, V: 'a>(key: K, root: &'a m
 
 
 /// An entry - occupied or vacant - in the trie, corresponding to some given key.
-pub enum Entry<'a, K: 'a + ToOwned, V: 'a> {
+pub enum Entry<'a, K: 'a, V: 'a> {
     Vacant(VacantEntry<'a, K, V>),
     Occupied(OccupiedEntry<'a, K, V>),
 }
 
 
-impl<'a, K: 'a + ToOwned + Borrow<[u8]>, V: 'a> Entry<'a, K, V> {
+impl<'a, K: 'a + Borrow<[u8]>, V: 'a> Entry<'a, K, V> {
     fn nonempty(key: K, root: &'a mut Option<Node<K, V>>) -> Entry<'a, K, V> {
         let (exemplar_ptr, mismatch) = {
             let node = unsafe { root.as_mut().unchecked_unwrap() };
@@ -45,10 +48,7 @@ impl<'a, K: 'a + ToOwned + Borrow<[u8]>, V: 'a> Entry<'a, K, V> {
     }
 
 
-    fn occupied(
-        leaf: *mut Leaf<K, V>,
-        root: *mut Option<Node<K, V>>,
-    ) -> Entry<'a, K, V> {
+    fn occupied(leaf: *mut Leaf<K, V>, root: *mut Option<Node<K, V>>) -> Entry<'a, K, V> {
         Entry::Occupied(OccupiedEntry {
             _dummy: PhantomData,
             leaf,
@@ -110,19 +110,19 @@ impl<'a, K: 'a + ToOwned + Borrow<[u8]>, V: 'a> Entry<'a, K, V> {
 
 
 /// A vacant entry in the trie.
-pub struct VacantEntry<'a, K: 'a + ToOwned, V: 'a> {
+pub struct VacantEntry<'a, K: 'a, V: 'a> {
     key: K,
     inner: VacantEntryInner<'a, K, V>,
 }
 
 
-enum VacantEntryInner<'a, K: 'a + ToOwned, V: 'a> {
+enum VacantEntryInner<'a, K: 'a, V: 'a> {
     Root(&'a mut Option<Node<K, V>>),
     Internal(usize, u8, &'a mut Node<K, V>),
 }
 
 
-impl<'a, K: 'a + ToOwned + Borrow<[u8]>, V: 'a> VacantEntry<'a, K, V> {
+impl<'a, K: 'a + Borrow<[u8]>, V: 'a> VacantEntry<'a, K, V> {
     /// Get a reference to the key associated with this vacant entry.
     pub fn key(&self) -> &K {
         &self.key
@@ -156,7 +156,7 @@ impl<'a, K: 'a + ToOwned + Borrow<[u8]>, V: 'a> VacantEntry<'a, K, V> {
 
 
 /// An occupied entry in the trie.
-pub struct OccupiedEntry<'a, K: 'a + ToOwned, V: 'a> {
+pub struct OccupiedEntry<'a, K: 'a, V: 'a> {
     _dummy: PhantomData<&'a mut ()>,
 
     leaf: *mut Leaf<K, V>,
@@ -164,16 +164,16 @@ pub struct OccupiedEntry<'a, K: 'a + ToOwned, V: 'a> {
 }
 
 
-impl<'a, K: 'a + ToOwned + Borrow<[u8]>, V: 'a> OccupiedEntry<'a, K, V> {
+impl<'a, K: 'a + Borrow<[u8]>, V: 'a> OccupiedEntry<'a, K, V> {
     /// Get a reference to the key of the entry.
     pub fn key(&self) -> &K {
         let leaf = unsafe { &*self.leaf };
-        leaf.key.borrow()
+        &leaf.key
     }
 
 
     /// Remove the entry from the trie, returning the stored key and value.
-    pub fn remove_entry(self) -> (K::Owned, V) {
+    pub fn remove_entry(self) -> (K, V) {
         let root = unsafe { &mut *self.root };
 
         match *root {

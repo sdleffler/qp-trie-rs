@@ -7,17 +7,18 @@ use entry::{make_entry, Entry};
 use iter::{Iter, IterMut, IntoIter};
 use node::{Node, Leaf};
 use subtrie::SubTrie;
+use util::nybble_mismatch;
+use wrapper::{BString, BStr};
 
 /// A QP-trie. QP stands for - depending on who you ask - either "quelques-bits popcount" or
 /// "quad-bit popcount". In any case, the fact of the matter is that this is a compressed radix
 /// trie with a branching factor of 16. It acts as a key-value map where the keys are any value
 /// which can be converted to a slice of bytes.
 ///
-/// It *can* be used with strings, although it is worth noting how inconvenient doing so is - as
-/// some `&str` does not hash to the same value as that same `&str` converted to an `&[u8]`
-/// (currently - see issue https://github.com/rust-lang/rust/issues/27108 which unfortunately
-/// appears to be abandoned.) The following example uses strings and also showcases the necessary
-/// inconveniences.
+/// The following example uses the provided string wrapper. Unfortunately, `String`/`str` cannot be
+/// used directly because they do not implement `Borrow<[u8]>` (as they do not hash the same way as
+/// a byte slice.) As a stopgap, `qp_trie::wrapper::{BString, BStr}` are provided, as are the
+/// `.whatever_str()` convenience methods on `qp_trie::Trie<BString, _>`.
 ///
 /// # Example
 ///
@@ -26,58 +27,48 @@ use subtrie::SubTrie;
 ///
 /// let mut trie = Trie::new();
 ///
-/// trie.insert(*b"abbc", 1);
-/// trie.insert(*b"abcd", 2);
-/// trie.insert(*b"bcde", 3);
-/// trie.insert(*b"bdde", 4);
-/// trie.insert(*b"bddf", 5);
+/// trie.insert_str("abbc", 1);
+/// trie.insert_str("abcd", 2);
+/// trie.insert_str("bcde", 3);
+/// trie.insert_str("bdde", 4);
+/// trie.insert_str("bddf", 5);
 ///
 /// // This will print the following string:
 /// //
-/// // {[97, 98, 98, 99]: 1, [97, 98, 99, 100]: 2, [98, 99, 100, 101]: 3, [98, 100, 100, 101]: 4, [98, 100, 100, 102]: 5}
-/// //
-/// // Unfortunately, for Reasons, we cannot debug-print strings in this way (because strings do
-/// // implement `Borrow<[u8]>` due to "hashing differences".) So in debug we get a list of byte
-/// // values.
+/// // `{"abbc": 1, "abcd": 2, "bcde": 3, "bdde": 4, "bddf": 5}`
 ///
 /// println!("{:?}", trie);
-/// # assert_eq!(format!("{:?}", trie), "{[97, 98, 98, 99]: 1, [97, 98, 99, 100]: 2, [98, 99, 100, 101]: 3, [98, 100, 100, 101]: 4, [98, 100, 100, 102]: 5}");
+/// # assert_eq!(format!("{:?}", trie), "{\"abbc\": 1, \"abcd\": 2, \"bcde\": 3, \"bdde\": 4, \"bddf\": 5}");
 ///
-/// assert_eq!(trie.get(*b"abcd"), Some(&2));
-/// assert_eq!(trie.get(*b"bcde"), Some(&3));
+/// assert_eq!(trie.get_str("abcd"), Some(&2));
+/// assert_eq!(trie.get_str("bcde"), Some(&3));
 ///
 /// // We can take subtries, removing all elements of the trie with a given prefix.
-/// let mut subtrie = trie.remove_prefix(*b"b");
+/// let mut subtrie = trie.remove_prefix_str("b");
 ///
-/// assert_eq!(trie.get(*b"abbc"), Some(&1));
-/// assert_eq!(trie.get(*b"abcd"), Some(&2));
-/// assert_eq!(trie.get(*b"bcde"), None);
-/// assert_eq!(trie.get(*b"bdde"), None);
-/// assert_eq!(trie.get(*b"bddf"), None);
+/// assert_eq!(trie.get_str("abbc"), Some(&1));
+/// assert_eq!(trie.get_str("abcd"), Some(&2));
+/// assert_eq!(trie.get_str("bcde"), None);
+/// assert_eq!(trie.get_str("bdde"), None);
+/// assert_eq!(trie.get_str("bddf"), None);
 ///
-/// assert_eq!(subtrie.get(*b"abbc"), None);
-/// assert_eq!(subtrie.get(*b"abcd"), None);
-/// assert_eq!(subtrie.get(*b"bcde"), Some(&3));
-/// assert_eq!(subtrie.get(*b"bdde"), Some(&4));
-/// assert_eq!(subtrie.get(*b"bddf"), Some(&5));
+/// assert_eq!(subtrie.get_str("abbc"), None);
+/// assert_eq!(subtrie.get_str("abcd"), None);
+/// assert_eq!(subtrie.get_str("bcde"), Some(&3));
+/// assert_eq!(subtrie.get_str("bdde"), Some(&4));
+/// assert_eq!(subtrie.get_str("bddf"), Some(&5));
 ///
 /// // We can remove elements:
-/// assert_eq!(trie.remove(*b"abbc"), Some(1));
-/// assert_eq!(trie.get(*b"abbc"), None);
+/// assert_eq!(trie.remove_str("abbc"), Some(1));
+/// assert_eq!(trie.get_str("abbc"), None);
 ///
 /// // We can mutate values:
-/// *subtrie.get_mut(*b"bdde").unwrap() = 0;
-/// assert_eq!(subtrie.get(*b"bdde"), Some(&0));
+/// *subtrie.get_mut_str("bdde").unwrap() = 0;
+/// assert_eq!(subtrie.get_str("bdde"), Some(&0));
 /// ```
-pub struct Trie<K: ToOwned, V> {
+#[derive(Clone, PartialEq, Eq, Default)]
+pub struct Trie<K, V> {
     root: Option<Node<K, V>>,
-}
-
-
-impl<K: ToOwned, V: Clone> Clone for Trie<K, V> {
-    fn clone(&self) -> Self {
-        Trie { root: self.root.clone() }
-    }
 }
 
 
@@ -91,9 +82,9 @@ impl<K: fmt::Debug + ToOwned, V: fmt::Debug> fmt::Debug for Trie<K, V> {
 }
 
 
-impl<K: ToOwned, V> IntoIterator for Trie<K, V> {
+impl<K, V> IntoIterator for Trie<K, V> {
     type IntoIter = IntoIter<K, V>;
-    type Item = (K::Owned, V);
+    type Item = (K, V);
 
     fn into_iter(self) -> Self::IntoIter {
         self.root.map(Node::into_iter).unwrap_or_else(
@@ -103,7 +94,7 @@ impl<K: ToOwned, V> IntoIterator for Trie<K, V> {
 }
 
 
-impl<K: ToOwned + Borrow<[u8]>, V> FromIterator<(K, V)> for Trie<K, V> {
+impl<K: Borrow<[u8]>, V> FromIterator<(K, V)> for Trie<K, V> {
     fn from_iter<I>(iterable: I) -> Trie<K, V>
     where
         I: IntoIterator<Item = (K, V)>,
@@ -119,7 +110,7 @@ impl<K: ToOwned + Borrow<[u8]>, V> FromIterator<(K, V)> for Trie<K, V> {
 }
 
 
-impl<K: ToOwned + Borrow<[u8]>, V> Extend<(K, V)> for Trie<K, V> {
+impl<K: Borrow<[u8]>, V> Extend<(K, V)> for Trie<K, V> {
     fn extend<I>(&mut self, iterable: I)
     where
         I: IntoIterator<Item = (K, V)>,
@@ -131,24 +122,7 @@ impl<K: ToOwned + Borrow<[u8]>, V> Extend<(K, V)> for Trie<K, V> {
 }
 
 
-impl<K: ToOwned, V> Default for Trie<K, V> {
-    fn default() -> Self {
-        Trie { root: None }
-    }
-}
-
-
-impl<K: ToOwned + Borrow<[u8]>, V: PartialEq> PartialEq for Trie<K, V> {
-    fn eq(&self, rhs: &Trie<K, V>) -> bool {
-        self.root == rhs.root
-    }
-}
-
-
-impl<K: ToOwned + Borrow<[u8]>, V: Eq> Eq for Trie<K, V> {}
-
-
-impl<K: ToOwned + Borrow<[u8]>, V> Trie<K, V> {
+impl<K, V> Trie<K, V> {
     /// Create a new, empty trie.
     pub fn new() -> Trie<K, V> {
         Trie { root: None }
@@ -171,10 +145,16 @@ impl<K: ToOwned + Borrow<[u8]>, V> Trie<K, V> {
             None => IterMut::default(),
         }
     }
+}
 
 
+impl<K: Borrow<[u8]>, V> Trie<K, V> {
     /// Iterate over all elements with a given prefix.
-    pub fn iter_prefix<L: Borrow<[u8]>>(&self, prefix: L) -> Iter<K, V> {
+    pub fn iter_prefix<Q: ?Sized>(&self, prefix: &Q) -> Iter<K, V>
+    where
+        K: Borrow<Q>,
+        Q: Borrow<[u8]>,
+    {
         match self.root.as_ref().and_then(
             |node| node.get_prefix(prefix.borrow()),
         ) {
@@ -186,7 +166,11 @@ impl<K: ToOwned + Borrow<[u8]>, V> Trie<K, V> {
 
     /// Iterate over all elements with a given prefix, but given a mutable reference to the
     /// associated value.
-    pub fn iter_prefix_mut<L: Borrow<[u8]>>(&mut self, prefix: L) -> IterMut<K, V> {
+    pub fn iter_prefix_mut<Q: ?Sized>(&mut self, prefix: &Q) -> IterMut<K, V>
+    where
+        K: Borrow<Q>,
+        Q: Borrow<[u8]>,
+    {
         match self.root.as_mut().and_then(|node| {
             node.get_prefix_mut(prefix.borrow())
         }) {
@@ -197,11 +181,35 @@ impl<K: ToOwned + Borrow<[u8]>, V> Trie<K, V> {
 
 
     /// Get an immutable view into the trie, providing only values keyed with the given prefix.
-    pub fn subtrie<L: Borrow<[u8]>>(&self, prefix: L) -> SubTrie<K, V> {
+    pub fn subtrie<Q: ?Sized>(&self, prefix: &Q) -> SubTrie<K, V>
+    where
+        K: Borrow<Q>,
+        Q: Borrow<[u8]>,
+    {
         SubTrie {
             root: self.root.as_ref().and_then(
                 |node| node.get_prefix(prefix.borrow()),
             ),
+        }
+    }
+
+
+    /// Get the longest common prefix of all the nodes in the trie and the given key.
+    pub fn longest_common_prefix<'a, Q: ?Sized>(&self, key: &'a Q) -> &K::Split
+    where
+        K: Borrow<Q> + Break,
+        Q: Borrow<[u8]>,
+    {
+        match self.root.as_ref() {
+            Some(root) => {
+                let exemplar = root.get_exemplar(key.borrow());
+
+                match nybble_mismatch(exemplar.key_slice(), key.borrow()) {
+                    Some(i) => exemplar.key.find_break(i / 2),
+                    None => exemplar.key.borrow(),
+                }
+            }
+            None => K::empty(),
         }
     }
 
@@ -216,7 +224,11 @@ impl<K: ToOwned + Borrow<[u8]>, V> Trie<K, V> {
 
 
     /// Get an immutable reference to the value associated with a given key, if it is in the tree.
-    pub fn get<L: Borrow<[u8]>>(&self, key: L) -> Option<&V> {
+    pub fn get<'a, Q: ?Sized>(&self, key: &'a Q) -> Option<&V>
+    where
+        K: Borrow<Q>,
+        Q: Borrow<[u8]>,
+    {
         self.root
             .as_ref()
             .and_then(|node| node.get(key.borrow()))
@@ -225,7 +237,11 @@ impl<K: ToOwned + Borrow<[u8]>, V> Trie<K, V> {
 
 
     /// Get a mutable reference to the value associated with a given key, if it is in the tree.
-    pub fn get_mut<L: Borrow<[u8]>>(&mut self, key: L) -> Option<&mut V> {
+    pub fn get_mut<'a, Q: ?Sized>(&mut self, key: &'a Q) -> Option<&mut V>
+    where
+        K: Borrow<Q>,
+        Q: Borrow<[u8]>,
+    {
         self.root
             .as_mut()
             .and_then(|node| node.get_mut(key.borrow()))
@@ -247,13 +263,21 @@ impl<K: ToOwned + Borrow<[u8]>, V> Trie<K, V> {
 
     /// Remove the key/value pair associated with a given key from the trie, returning
     /// `Some(val)` if a corresponding key/value pair was found.
-    pub fn remove<L: Borrow<[u8]>>(&mut self, key: L) -> Option<V> {
+    pub fn remove<Q: ?Sized>(&mut self, key: &Q) -> Option<V>
+    where
+        K: Borrow<Q>,
+        Q: Borrow<[u8]>,
+    {
         Node::remove(&mut self.root, key.borrow()).map(|leaf| leaf.val)
     }
 
 
     /// Remove all elements beginning with a given prefix from the trie, producing a subtrie.
-    pub fn remove_prefix<L: Borrow<[u8]>>(&mut self, prefix: L) -> Trie<K, V> {
+    pub fn remove_prefix<'a, Q: ?Sized>(&mut self, prefix: &'a Q) -> Trie<K, V>
+    where
+        K: Borrow<Q>,
+        Q: Borrow<[u8]>,
+    {
         Trie { root: Node::remove_prefix(&mut self.root, prefix.borrow()) }
     }
 
@@ -265,17 +289,114 @@ impl<K: ToOwned + Borrow<[u8]>, V> Trie<K, V> {
 }
 
 
-impl<K: ToOwned + Borrow<[u8]>, V, L: Borrow<[u8]>> Index<L> for Trie<K, V> {
+impl<'a, K: Borrow<[u8]>, V, Q: ?Sized> Index<&'a Q> for Trie<K, V>
+where
+    K: Borrow<Q>,
+    Q: Borrow<[u8]>,
+{
     type Output = V;
 
-    fn index(&self, key: L) -> &V {
+    fn index(&self, key: &Q) -> &V {
         self.get(key).unwrap()
     }
 }
 
 
-impl<K: ToOwned + Borrow<[u8]>, V, L: Borrow<[u8]>> IndexMut<L> for Trie<K, V> {
-    fn index_mut(&mut self, key: L) -> &mut V {
+impl<'a, K: Borrow<[u8]>, V, Q: ?Sized> IndexMut<&'a Q> for Trie<K, V>
+where
+    K: Borrow<Q>,
+    Q: Borrow<[u8]>,
+{
+    fn index_mut(&mut self, key: &Q) -> &mut V {
         self.get_mut(key).unwrap()
+    }
+}
+
+
+pub trait Break: Borrow<<Self as Break>::Split> {
+    type Split: ?Sized;
+
+    fn empty<'a>() -> &'a Self::Split;
+    fn find_break(&self, loc: usize) -> &Self::Split;
+}
+
+
+impl Break for [u8] {
+    type Split = [u8];
+
+
+    #[inline]
+    fn empty<'a>() -> &'a [u8] {
+        <&'a [u8]>::default()
+    }
+
+
+    #[inline]
+    fn find_break(&self, loc: usize) -> &[u8] {
+        &self[..loc]
+    }
+}
+
+
+impl<'b> Break for &'b [u8] {
+    type Split = [u8];
+
+
+    #[inline]
+    fn empty<'a>() -> &'a [u8] {
+        <&'a [u8]>::default()
+    }
+
+
+    #[inline]
+    fn find_break(&self, loc: usize) -> &[u8] {
+        &self[..loc]
+    }
+}
+
+
+impl<V> Trie<BString, V> {
+    /// Convenience function for getting with a string.
+    pub fn get_str<'a, Q: ?Sized>(&self, key: &'a Q) -> Option<&V>
+    where
+        Q: Borrow<str>,
+    {
+        self.get(AsRef::<BStr>::as_ref(key.borrow()))
+    }
+
+
+    /// Convenience function for getting mutably with a string.
+    pub fn get_mut_str<'a, Q: ?Sized>(&mut self, key: &'a Q) -> Option<&mut V>
+    where
+        Q: Borrow<str>,
+    {
+        self.get_mut(AsRef::<BStr>::as_ref(key.borrow()))
+    }
+
+
+    /// Convenience function for inserting with a string.
+    pub fn insert_str<'a, Q: ?Sized>(&mut self, key: &'a Q, val: V) -> Option<V>
+    where
+        Q: Borrow<str>,
+    {
+        self.insert(key.borrow().into(), val)
+    }
+
+
+    /// Convenience function for removing with a string.
+    pub fn remove_str<'a, Q: ?Sized>(&mut self, key: &'a Q) -> Option<V>
+    where
+        Q: Borrow<str>,
+    {
+        self.remove(AsRef::<BStr>::as_ref(key.borrow()))
+    }
+
+
+    /// Convenience function for removing a prefix with a string.
+    pub fn remove_prefix_str<'a, Q: ?Sized>(&mut self, prefix: &'a Q) -> Trie<BString, V>
+    where
+        Q: Borrow<str>,
+    {
+        self.remove_prefix(AsRef::<BStr>::as_ref(prefix.borrow()))
     }
 }

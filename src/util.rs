@@ -83,6 +83,3 @@ pub fn nybble_get_mismatch(left: &[u8], right: &[u8]) -> Option<(u8, usize)> {
         Some((nybble_index(idx, left), idx))
     }
 }
-
-
-

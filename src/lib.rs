@@ -17,9 +17,11 @@ mod subtrie;
 mod trie;
 mod util;
 
+pub mod wrapper;
+
 pub use entry::{Entry, OccupiedEntry, VacantEntry};
 pub use iter::{Iter, IterMut, IntoIter};
-pub use trie::Trie;
+pub use trie::{Trie, Break};
 pub use subtrie::SubTrie;
 
 
@@ -80,7 +82,7 @@ mod test {
 
 
             for (&key, &value) in hashmap.iter() {
-                if trie.get([key]) != Some(&value) {
+                if trie.get(&[key]) != Some(&value) {
                     return false;
                 }
             }
@@ -106,7 +108,7 @@ mod test {
                     }
                     None => {
                         hashmap.remove(&k.as_ref());
-                        trie.remove(k.as_ref());
+                        trie.remove(&k.as_ref());
                     },
                 }
             }
@@ -184,6 +186,37 @@ mod test {
             let collected: HashMap<&[u8], u64> = trie.into_iter().collect();
 
             hashmap == collected
+        }
+
+        fn longest_common_prefix(boolfix: Vec<bool>, boolts: Vec<(Vec<bool>, u64)>) -> TestResult {
+            let prefix = boolfix.into_iter().map(|b| if b { 1 } else { 0 }).collect::<Vec<u8>>();
+            let elts = boolts.into_iter().map(|(key, val)| (key.into_iter().map(|b| if b { 1 } else { 0 }).collect::<Vec<u8>>(), val)).collect::<Vec<(Vec<u8>, u64)>>();
+            
+            let mut trie = Trie::new();
+
+            for &(ref k, v) in elts.iter() {
+                trie.insert(&k[..], v);
+            }
+
+            let lcp = elts.iter().fold(&[][..], |lcp, &(ref k, _)| {
+                let mut i = 0;
+
+                for (j, (b, c)) in k.iter().cloned().zip(prefix.iter().cloned()).enumerate() {
+                    if b != c {
+                        break;
+                    }
+
+                    i = j + 1;
+                }
+
+                if i >= lcp.len() {
+                    &prefix[..i]
+                } else {
+                    lcp
+                }
+            });
+
+            TestResult::from_bool(lcp == trie.longest_common_prefix(prefix.as_slice()))
         }
     }
 
@@ -283,7 +316,7 @@ mod test {
                 }
                 None => {
                     hashmap.remove(&k.as_ref());
-                    trie.remove(k.as_ref());
+                    trie.remove(&k.as_ref());
                 }
             }
         }
@@ -320,7 +353,7 @@ mod test {
 
         for (key, value) in hashmap {
             assert_eq!(
-                trie.get([key]),
+                trie.get(&[key]),
                 Some(&value),
                 "Sad trie: {:?}",
                 trie,
@@ -351,5 +384,49 @@ mod test {
     #[test]
     fn insert_and_get_5() {
         insert_and_get_vec(vec![(0, 0), (32, 9), (87, 5), (89, 26)]);
+    }
+
+
+    #[test]
+    fn longest_common_prefix_simple() {
+        use wrapper::{BString, BStr};
+
+        let mut trie = Trie::<BString, u32>::new();
+
+        trie.insert("z".into(), 2);
+        trie.insert("aba".into(), 5);
+        trie.insert("abb".into(), 6);
+        trie.insert("abc".into(), 50);
+
+        let ab_sum = trie.iter_prefix(trie.longest_common_prefix(AsRef::<BStr>::as_ref("abd"))).fold(0, |acc, (_, &v)| {
+            println!("Iterating over child: {:?}", v);
+
+            acc + v
+        });
+
+        println!("{}", ab_sum);
+        assert_eq!(ab_sum, 5 + 6 + 50);
+    }
+
+
+    #[test]
+    fn longest_common_prefix_complex() {
+        use wrapper::{BString, BStr};
+
+        let mut trie = Trie::<BString, u32>::new();
+
+        trie.insert("z".into(), 2);
+        trie.insert("aba".into(), 5);
+        trie.insert("abb".into(), 6);
+        trie.insert("abc".into(), 50);
+
+        let ab_sum = trie.iter_prefix(trie.longest_common_prefix(AsRef::<BStr>::as_ref("abz"))).fold(0, |acc, (_, &v)| {
+            println!("Iterating over child: {:?}", v);
+
+            acc + v
+        });
+
+        println!("{}", ab_sum);
+        assert_eq!(ab_sum, 5 + 6 + 50);
     }
 }

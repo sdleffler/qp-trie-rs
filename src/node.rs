@@ -9,46 +9,28 @@ use sparse::Sparse;
 use util::{nybble_index, nybble_mismatch};
 
 // A leaf in the trie.
-pub struct Leaf<K: ToOwned, V> {
-    pub key: K::Owned,
+#[derive(Clone, PartialEq, Eq)]
+pub struct Leaf<K, V> {
+    pub key: K,
     pub val: V,
 }
 
 
-impl<K: ToOwned, V: Clone> Clone for Leaf<K, V> {
-    #[inline]
-    fn clone(&self) -> Self {
-        Leaf {
-            key: self.key.borrow().to_owned(),
-            val: self.val.clone(),
-        }
-    }
-}
-
-
-impl<K: ToOwned + Borrow<[u8]>, V: PartialEq> PartialEq for Leaf<K, V> {
-    #[inline]
-    fn eq(&self, rhs: &Leaf<K, V>) -> bool {
-        self.key_slice() == rhs.key_slice()
-    }
-}
-
-
-impl<K: ToOwned, V> Leaf<K, V> {
+impl<K, V> Leaf<K, V> {
     #[inline]
     pub fn new(key: K, val: V) -> Leaf<K, V> {
         Leaf {
-            key: key.to_owned(),
+            key,
             val,
         }
     }
 }
 
 
-impl<K: ToOwned + Borrow<[u8]>, V> Leaf<K, V> {
+impl<K: Borrow<[u8]>, V> Leaf<K, V> {
     #[inline]
     pub fn key_slice(&self) -> &[u8] {
-        self.key.borrow().borrow()
+        self.key.borrow()
     }
 }
 
@@ -57,7 +39,8 @@ impl<K: ToOwned + Borrow<[u8]>, V> Leaf<K, V> {
 // other branches - the 0th entry, if it exists in the sparse array, is the "head" of the branch,
 // containing a key/value pair corresponding to the leaf which would otherwise occupy the location
 // of the branch in the trie.
-pub struct Branch<K: ToOwned, V> {
+#[derive(Clone, PartialEq, Eq)]
+pub struct Branch<K, V> {
     // The nybble that this `Branch` cares about. Entries in the `entries` sparse array correspond
     // to different values of the nybble at the choice point for given keys.
     choice: usize,
@@ -65,28 +48,7 @@ pub struct Branch<K: ToOwned, V> {
 }
 
 
-impl<K: ToOwned + Borrow<[u8]>, V: PartialEq> PartialEq for Branch<K, V> {
-    #[inline]
-    fn eq(&self, rhs: &Branch<K, V>) -> bool {
-        self.choice == rhs.choice && self.entries == rhs.entries
-    }
-}
-
-
-impl<K: ToOwned, V: Clone> Clone for Branch<K, V> {
-    #[inline]
-    fn clone(&self) -> Self {
-        Branch {
-            choice: self.choice,
-            entries: self.entries.clone(),
-        }
-    }
-}
-
-
-impl<K: ToOwned, V: fmt::Debug> fmt::Debug for Branch<K, V>
-where
-    K::Owned: fmt::Debug,
+impl<K: fmt::Debug, V: fmt::Debug> fmt::Debug for Branch<K, V>
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("Branch")
@@ -97,7 +59,7 @@ where
 }
 
 
-impl<K: ToOwned + Borrow<[u8]>, V> Branch<K, V> {
+impl<K: Borrow<[u8]>, V> Branch<K, V> {
     // Create an empty `Branch` with the given choice point.
     #[inline]
     pub fn new(choice: usize) -> Branch<K, V> {
@@ -247,7 +209,7 @@ impl<K: ToOwned + Borrow<[u8]>, V> Branch<K, V> {
 }
 
 
-impl<K: ToOwned, V> Branch<K, V> {
+impl<K, V> Branch<K, V> {
     // Count the number of entries stored in this branch. This traverses all subnodes of the
     // branch, so it is relatively expensive.
     #[inline]
@@ -269,7 +231,7 @@ impl<K: ToOwned, V> Branch<K, V> {
 }
 
 
-impl<K: ToOwned, V> IntoIterator for Branch<K, V> {
+impl<K, V> IntoIterator for Branch<K, V> {
     type IntoIter = ::std::vec::IntoIter<Node<K, V>>;
     type Item = Node<K, V>;
 
@@ -281,38 +243,14 @@ impl<K: ToOwned, V> IntoIterator for Branch<K, V> {
 
 
 // A node in the trie. `K` must be `ToOwned` because the `Owned` version is what we store.
-pub enum Node<K: ToOwned, V> {
+#[derive(Clone, PartialEq, Eq)]
+pub enum Node<K, V> {
     Leaf(Leaf<K, V>),
     Branch(Branch<K, V>),
 }
 
 
-impl<K: ToOwned + Borrow<[u8]>, V: PartialEq> PartialEq for Node<K, V> {
-    #[inline]
-    fn eq(&self, rhs: &Node<K, V>) -> bool {
-        match (self, rhs) {
-            (&Node::Leaf(ref l), &Node::Leaf(ref r)) => l == r,
-            (&Node::Branch(ref l), &Node::Branch(ref r)) => l == r,
-            _ => false,
-        }
-    }
-}
-
-
-impl<K: ToOwned, V: Clone> Clone for Node<K, V> {
-    #[inline]
-    fn clone(&self) -> Self {
-        match *self {
-            Node::Leaf(ref leaf) => Node::Leaf(leaf.clone()),
-            Node::Branch(ref branch) => Node::Branch(branch.clone()),
-        }
-    }
-}
-
-
-impl<K: ToOwned, V: fmt::Debug> fmt::Debug for Node<K, V>
-where
-    K::Owned: fmt::Debug,
+impl<K: fmt::Debug, V: fmt::Debug> fmt::Debug for Node<K, V>
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
@@ -333,7 +271,7 @@ where
 }
 
 
-impl<K: ToOwned + Borrow<[u8]>, V> Node<K, V> {
+impl<K: Borrow<[u8]>, V> Node<K, V> {
     // The following `unwrap_` functions are used for (at times) efficiently circumventing the
     // borrowchecker. All of them use `debug_unreachable!` internally, which means that in release,
     // a misuse can cause undefined behavior (because the tried-to-unwrap-wrong-thing code path is
@@ -771,7 +709,7 @@ impl<K: ToOwned + Borrow<[u8]>, V> Node<K, V> {
 }
 
 
-impl<K: ToOwned, V> Node<K, V> {
+impl<K, V> Node<K, V> {
     pub fn count(&self) -> usize {
         match *self {
             Node::Leaf(..) => 1,
@@ -791,9 +729,9 @@ impl<K: ToOwned, V> Node<K, V> {
 }
 
 
-impl<K: ToOwned, V> IntoIterator for Node<K, V> {
+impl<K, V> IntoIterator for Node<K, V> {
     type IntoIter = IntoIter<K, V>;
-    type Item = (K::Owned, V);
+    type Item = (K, V);
 
     fn into_iter(self) -> Self::IntoIter {
         IntoIter::new(self)
