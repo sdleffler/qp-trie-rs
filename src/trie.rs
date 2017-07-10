@@ -150,7 +150,7 @@ impl<K, V> Trie<K, V> {
 
 impl<K: Borrow<[u8]>, V> Trie<K, V> {
     /// Iterate over all elements with a given prefix.
-    pub fn iter_prefix<Q: ?Sized>(&self, prefix: &Q) -> Iter<K, V>
+    pub fn iter_prefix<'a, Q: ?Sized>(&self, prefix: &'a Q) -> Iter<K, V>
     where
         K: Borrow<Q>,
         Q: Borrow<[u8]>,
@@ -166,7 +166,7 @@ impl<K: Borrow<[u8]>, V> Trie<K, V> {
 
     /// Iterate over all elements with a given prefix, but given a mutable reference to the
     /// associated value.
-    pub fn iter_prefix_mut<Q: ?Sized>(&mut self, prefix: &Q) -> IterMut<K, V>
+    pub fn iter_prefix_mut<'a, Q: ?Sized>(&mut self, prefix: &'a Q) -> IterMut<K, V>
     where
         K: Borrow<Q>,
         Q: Borrow<[u8]>,
@@ -181,7 +181,7 @@ impl<K: Borrow<[u8]>, V> Trie<K, V> {
 
 
     /// Get an immutable view into the trie, providing only values keyed with the given prefix.
-    pub fn subtrie<Q: ?Sized>(&self, prefix: &Q) -> SubTrie<K, V>
+    pub fn subtrie<'a, Q: ?Sized>(&self, prefix: &'a Q) -> SubTrie<K, V>
     where
         K: Borrow<Q>,
         Q: Borrow<[u8]>,
@@ -356,6 +356,33 @@ impl<'b> Break for &'b [u8] {
 
 
 impl<V> Trie<BString, V> {
+    /// Convenience function for iterating over suffixes with a string.
+    pub fn iter_prefix_str<'a, Q: ?Sized>(&self, key: &'a Q) -> Iter<BString, V>
+    where
+        Q: Borrow<str>,
+    {
+        self.iter_prefix(AsRef::<BStr>::as_ref(key.borrow()))
+    }
+
+
+    /// Convenience function for iterating over suffixes with a string.
+    pub fn iter_prefix_mut_str<'a, Q: ?Sized>(&mut self, key: &'a Q) -> IterMut<BString, V>
+    where
+        Q: Borrow<str>,
+    {
+        self.iter_prefix_mut(AsRef::<BStr>::as_ref(key.borrow()))
+    }
+
+
+    /// Convenience function for viewing subtries wit a string prefix.
+    pub fn subtrie_str<'a, Q: ?Sized>(&self, prefix: &'a Q) -> SubTrie<BString, V>
+    where
+        Q: Borrow<str>,
+    {
+        self.subtrie(AsRef::<BStr>::as_ref(prefix.borrow()))
+    }
+
+
     /// Convenience function for getting with a string.
     pub fn get_str<'a, Q: ?Sized>(&self, key: &'a Q) -> Option<&V>
     where
