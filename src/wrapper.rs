@@ -48,7 +48,7 @@ impl Deref for BString {
 
     #[inline]
     fn deref(&self) -> &Self::Target {
-        From::from(self.as_str())
+        From::from(self.0.as_str())
     }
 }
 
@@ -73,14 +73,6 @@ impl Hash for BString {
     #[inline]
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.0.as_bytes().hash(state);
-    }
-}
-
-
-impl BString {
-    #[inline]
-    pub fn as_str(&self) -> &str {
-        self.0.as_str()
     }
 }
 
