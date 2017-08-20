@@ -22,9 +22,12 @@ travis-ci = { repository = "sdleffler/qp-trie-rs", branch = "master" }
 
 [dependencies]
 debug_unreachable = "0.1.1"
+serde = { version = "1.0.11", optional = true, features = ["derive"] }
 unreachable = "1.0.0"
 
 [dev-dependencies]
+bincode = "0.8.0"
 qptrie = "0.2.2"
 quickcheck = "0.4.1"
 rand = "0.3.15"
+serde_json = "1.0.3"

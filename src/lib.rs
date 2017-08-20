@@ -2,12 +2,28 @@
 extern crate debug_unreachable;
 extern crate unreachable;
 
+#[cfg(feature = "serde")]
+#[macro_use]
+extern crate serde;
+
 #[cfg(test)]
 #[macro_use]
 extern crate quickcheck;
 
 #[cfg(test)]
 extern crate rand;
+
+#[cfg(test)]
+#[cfg(feature = "serde")]
+extern crate serde_json;
+
+#[cfg(test)]
+#[cfg(feature = "serde")]
+extern crate bincode;
+
+
+#[cfg(feature = "serde")]
+mod serialization;
 
 mod entry;
 mod iter;
@@ -35,6 +51,11 @@ mod test {
     use quickcheck::TestResult;
 
     use util::nybble_index;
+
+    #[cfg(feature = "serde")]
+    use bincode;
+    #[cfg(feature = "serde")]
+    use serde_json;
 
     quickcheck! {
         fn nybble(nybs: Vec<u8>) -> TestResult {
@@ -217,6 +238,29 @@ mod test {
             });
 
             TestResult::from_bool(lcp == trie.longest_common_prefix(prefix.as_slice()))
+        }
+
+        #[cfg(feature = "serde")]
+        fn serialize(kvs: Vec<(Vec<u8>, usize)>) -> bool {
+            let original: Trie<Vec<u8>, usize> = kvs.into_iter().collect();
+            let serialized = bincode::serialize(&original, bincode::Infinite).unwrap();
+            let deserialized: Trie<_, _> = bincode::deserialize(&serialized).unwrap();
+
+            deserialized == original
+        }
+
+        #[cfg(feature = "serde")]
+        fn serialize_emptied(kvs: Vec<(Vec<u8>, usize)>) -> bool {
+            let mut trie: Trie<Vec<u8>, usize> = kvs.iter().cloned().collect();
+            
+            for (k, _) in kvs {
+                trie.remove(&k);
+            }
+
+            let serialized = bincode::serialize(&trie, bincode::Infinite).unwrap();
+            let deserialized: Trie<Vec<u8>, usize> = bincode::deserialize(&serialized).unwrap();
+
+            deserialized == Trie::new()
         }
     }
 
@@ -428,5 +472,39 @@ mod test {
 
         println!("{}", ab_sum);
         assert_eq!(ab_sum, 5 + 6 + 50);
+    }
+
+    #[test]
+    #[cfg(feature = "serde")]
+    fn serialize_max_branching_factor(){
+        let kvs = (0u16 .. 256).map(|b| {
+            let v = b as u8;
+            let k: Vec<_> = (0 .. 32).map(|i| v.wrapping_add(i)).collect();
+            (k, v)
+        });
+
+        let original: Trie<Vec<u8>, u8> = kvs.collect();
+        let serialized = bincode::serialize(&original, bincode::Infinite).unwrap();
+        let deserialized: Trie<_, _> = bincode::deserialize(&serialized).unwrap();
+
+        assert_eq!(deserialized, original);
+    }
+
+    #[test]
+    #[cfg(feature = "serde")]
+    fn serialize_pathological_branching() {
+        use wrapper::BString;
+
+        let kvs = (0 .. 64).map(|length| {
+            let seq = vec![0; length];
+            let k = String::from_utf8(seq).unwrap();
+            (BString::from(k), 0)
+        });
+
+        let original: Trie<BString, u8> = kvs.collect();
+        let serialized = serde_json::to_vec(&original).unwrap();
+        let deserialized: Trie<_, _> = serde_json::from_slice(&serialized).unwrap();
+
+        assert_eq!(deserialized, original);
     }
 }
