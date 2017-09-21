@@ -10,6 +10,12 @@ nybble is half a byte, or four bits.) QP-tries are essentially Patricia tries
 which branch on nybbles instead of individual bits; as such, a QP-trie has a
 branching factor (and radix) of 16.
 
+## Serialization/deserialization through Serde
+
+Optionally, the `qp_trie::Trie` type supports (de-)serialization through
+[serde](https://github.com/serde-rs/serde). Enabling the `serde` feature will
+enable compilation of `Deserialize` and `Serialize` implementations for `Trie`.
+
 ## When should I use a QP-trie?
 
 QP-tries as implemented in this crate are key-value maps for any keys which
