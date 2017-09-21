@@ -8,6 +8,7 @@ use trie::Break;
 
 /// A wrapper for `String` which implements `Borrow<[u8]>` and hashes in the same way as a byte
 /// slice.
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct BString(String);
 
