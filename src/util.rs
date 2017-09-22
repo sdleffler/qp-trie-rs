@@ -83,3 +83,37 @@ pub fn nybble_get_mismatch(left: &[u8], right: &[u8]) -> Option<(u8, usize)> {
         Some((nybble_index(idx, left), idx))
     }
 }
+
+
+#[cfg(test)]
+mod test {
+    use quickcheck::TestResult;
+
+    use super::*;
+
+    quickcheck! {
+        fn nybble(nybs: Vec<u8>) -> TestResult {
+            for &nyb in &nybs {
+                if nyb > 15 {
+                    return TestResult::discard();
+                }
+            }
+
+            let mut bytes = Vec::new();
+
+            for chunk in nybs.chunks(2) {
+                if chunk.len() == 2 {
+                    bytes.push(chunk[0] | (chunk[1] << 4));
+                } else {
+                    bytes.push(chunk[0]);
+                }
+            }
+
+            for (i, nyb) in nybs.into_iter().enumerate() {
+                assert_eq!(nyb + 1, nybble_index(i, &bytes));
+            }
+
+            TestResult::passed()
+        }
+    }
+}
