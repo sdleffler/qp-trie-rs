@@ -27,6 +27,7 @@ unreachable = "1.0.0"
 
 [dev-dependencies]
 bincode = "0.8.0"
+fnv = "1.0.5"
 qptrie = "0.2.2"
 quickcheck = "0.4.1"
 rand = "0.3.15"
