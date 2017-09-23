@@ -20,6 +20,7 @@ pub fn make_entry<'a, K: 'a + Borrow<[u8]>, V: 'a>(
 
 
 /// An entry - occupied or vacant - in the trie, corresponding to some given key.
+#[derive(Debug)]
 pub enum Entry<'a, K: 'a, V: 'a> {
     Vacant(VacantEntry<'a, K, V>),
     Occupied(OccupiedEntry<'a, K, V>),
@@ -110,12 +111,14 @@ impl<'a, K: 'a + Borrow<[u8]>, V: 'a> Entry<'a, K, V> {
 
 
 /// A vacant entry in the trie.
+#[derive(Debug)]
 pub struct VacantEntry<'a, K: 'a, V: 'a> {
     key: K,
     inner: VacantEntryInner<'a, K, V>,
 }
 
 
+#[derive(Debug)]
 enum VacantEntryInner<'a, K: 'a, V: 'a> {
     Root(&'a mut Option<Node<K, V>>),
     Internal(usize, u8, &'a mut Node<K, V>),
@@ -156,6 +159,7 @@ impl<'a, K: 'a + Borrow<[u8]>, V: 'a> VacantEntry<'a, K, V> {
 
 
 /// An occupied entry in the trie.
+#[derive(Debug)]
 pub struct OccupiedEntry<'a, K: 'a, V: 'a> {
     _dummy: PhantomData<&'a mut ()>,
 
