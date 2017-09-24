@@ -115,35 +115,28 @@ benchmarks based on those shown in the `qptrie` repository.
 
 ## Benchmarks
 
-Benchmarks are run against the `qptrie` crate and the Rust stdlib `BTreeMap`
-and `HashMap`. `qp_trie::Trie` consistently outperforms the `std::collections`
-`BTreeMap` and `HashMap` and also the `qptrie` crate's implementation on my
-machine - a Chromebook Pixel 2.0 running GalliumOS.
-
-Benchmarks can be reproduced using `cargo bench`. The Rust version used was
-`rustc 1.19.0-nightly (cfb5debbc 2017-06-12)`. Run several times, the
-benchmarks are consistent in their outputs but I selected the lowest variance
-results to display here.
+Benchmarks are run against the `qptrie` crate, the Rust stdlib `BTreeMap`, and
+the stdlib `HashMap` with both default and FNV hashing. `qp_trie::Trie`
+consistently outperforms the `std::collections` `BTreeMap` and `HashMap`, as
+well as the `qptrie` crate's implementation.
 
 Benchmarks named `exotrie` are using the `qptrie::Trie` implementation.
 
 ```
-running 8 tests
-test bench_btreemap_get    ... bench: 114,172,574 ns/iter (+/- 10,890,962)
-test bench_btreemap_insert ... bench: 118,547,331 ns/iter (+/- 13,464,035)
-test bench_exotrie_get     ... bench:  54,297,605 ns/iter (+/- 4,392,593)
-test bench_exotrie_insert  ... bench:  62,537,678 ns/iter (+/- 21,724,153)
-test bench_hashmap_get     ... bench:  63,191,541 ns/iter (+/- 6,685,288)
-test bench_hashmap_insert  ... bench:  55,076,618 ns/iter (+/- 2,212,986)
-test bench_trie_get        ... bench:  48,232,553 ns/iter (+/- 6,583,801)
-test bench_trie_insert     ... bench:  57,935,037 ns/iter (+/- 16,538,104)
-
-test result: ok. 0 passed; 0 failed; 0 ignored; 8 measured; 0 filtered out
+test bench_btreemap_get      ... bench: 111,468,098 ns/iter (+/- 10,103,247)
+test bench_btreemap_insert   ... bench: 112,124,846 ns/iter (+/- 14,296,195)
+test bench_exotrie_get       ... bench:  46,195,582 ns/iter (+/- 16,943,561)
+test bench_exotrie_insert    ... bench:  52,886,847 ns/iter (+/- 15,574,538)
+test bench_fnvhashmap_get    ... bench:   9,530,109 ns/iter (+/- 820,763)
+test bench_fnvhashmap_insert ... bench:  21,281,107 ns/iter (+/- 7,254,084)
+test bench_hashmap_get       ... bench:  49,653,426 ns/iter (+/- 7,004,051)
+test bench_hashmap_insert    ... bench:  47,771,824 ns/iter (+/- 4,979,606)
+test bench_trie_get          ... bench:  40,898,914 ns/iter (+/- 13,400,062)
+test bench_trie_insert       ... bench:  50,966,392 ns/iter (+/- 18,077,240)
 ```
 
 ## Future work
 
-- Benchmark against `FxHasher`/`FnvHasher` to get a better idea of how `Trie` compares against `HashMap`.
 - Add wrapper types for `String` and `str` to make working with strings easier.
 
 ## License
