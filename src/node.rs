@@ -9,7 +9,7 @@ use sparse::Sparse;
 use util::{nybble_index, nybble_mismatch};
 
 // A leaf in the trie.
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Leaf<K, V> {
     pub key: K,
     pub val: V,

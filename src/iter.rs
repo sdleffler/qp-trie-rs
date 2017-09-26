@@ -4,6 +4,7 @@ use node::Node;
 
 
 /// An iterator over the keys and values in a QP-trie.
+#[derive(Clone, Debug)]
 pub struct IntoIter<K, V> {
     stack: Vec<Node<K, V>>,
 }
@@ -40,6 +41,7 @@ impl<K, V> Iterator for IntoIter<K, V> {
 
 
 /// An iterator over immutable references to keys and values in a QP-trie.
+#[derive(Clone, Debug)]
 pub struct Iter<'a, K: 'a, V: 'a> {
     stack: Vec<&'a Node<K, V>>,
 }
@@ -75,6 +77,7 @@ impl<'a, K: 'a, V: 'a> Iterator for Iter<'a, K, V> {
 
 
 /// An iterator over immutable references to keys and mutable references to values in a QP-trie.
+#[derive(Debug)]
 pub struct IterMut<'a, K: 'a, V: 'a> {
     stack: Vec<&'a mut Node<K, V>>,
 }
