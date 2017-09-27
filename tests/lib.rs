@@ -176,6 +176,28 @@ quickcheck! {
         TestResult::from_bool(lcp == trie.longest_common_prefix(prefix.as_slice()))
     }
 
+    fn iter_keys(kvs : HashMap<Vec<u8>, usize>) -> bool {
+        let mut given_keys: Vec<_> = kvs.keys().cloned().collect();
+        let trie: Trie<_, _> = kvs.into_iter().collect();
+        let mut yielded_keys: Vec<_> = trie.keys().cloned().collect();
+
+        given_keys.sort();
+        yielded_keys.sort();
+
+        given_keys == yielded_keys
+    }
+
+    fn iter_values(kvs : HashMap<Vec<u8>, usize>) -> bool {
+        let mut given_values: Vec<_> = kvs.values().cloned().collect();
+        let trie: Trie<_, _> = kvs.into_iter().collect();
+        let mut yielded_values: Vec<_> = trie.values().cloned().collect();
+
+        given_values.sort();
+        yielded_values.sort();
+
+        given_values == yielded_values
+    }
+
     #[cfg(feature = "serde")]
     fn serialize(kvs: Vec<(Vec<u8>, usize)>) -> bool {
         let original: Trie<Vec<u8>, usize> = kvs.into_iter().collect();
