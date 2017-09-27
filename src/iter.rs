@@ -111,3 +111,114 @@ impl<'a, K: 'a, V: 'a> Iterator for IterMut<'a, K, V> {
         }
     }
 }
+
+
+/// An iterator over immutable references to the keys in the QP-trie.
+#[derive(Clone, Debug)]
+pub struct Keys<'a, K: 'a, V: 'a> {
+    stack: Vec<&'a Node<K, V>>,
+}
+
+
+impl<'a, K, V> Keys<'a, K, V> {
+    pub fn new(node: &'a Node<K, V>) -> Keys<'a, K, V> {
+        Keys { stack: vec![node] }
+    }
+}
+
+
+impl<'a, K, V> Default for Keys<'a, K, V> {
+    fn default() -> Self {
+        Keys { stack: vec![] }
+    }
+}
+
+
+impl<'a, K: 'a, V: 'a> Iterator for Keys<'a, K, V> {
+    type Item = &'a K;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.stack.pop() {
+            Some(&Node::Leaf(ref leaf)) => Some(leaf.key.borrow()),
+            Some(&Node::Branch(ref branch)) => {
+                self.stack.extend(branch.iter().rev());
+                self.next()
+            }
+            None => None,
+        }
+    }
+}
+
+
+/// An iterator over immutable references to the values in the QP-trie.
+#[derive(Clone, Debug)]
+pub struct Values<'a, K: 'a, V: 'a> {
+    stack: Vec<&'a Node<K, V>>,
+}
+
+
+impl<'a, K, V> Values<'a, K, V> {
+    pub fn new(node: &'a Node<K, V>) -> Values<'a, K, V> {
+        Values { stack: vec![node] }
+    }
+}
+
+
+impl<'a, K, V> Default for Values<'a, K, V> {
+    fn default() -> Self {
+        Values { stack: vec![] }
+    }
+}
+
+
+impl<'a, K: 'a, V: 'a> Iterator for Values<'a, K, V> {
+    type Item = &'a V;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.stack.pop() {
+            Some(&Node::Leaf(ref leaf)) => Some(&leaf.val),
+            Some(&Node::Branch(ref branch)) => {
+                self.stack.extend(branch.iter().rev());
+                self.next()
+            }
+            None => None,
+        }
+    }
+}
+
+
+/// An iterator over mutable references to the values in the QP-trie.
+#[derive(Debug)]
+pub struct ValuesMut<'a, K: 'a, V: 'a> {
+    stack: Vec<&'a mut Node<K, V>>,
+}
+
+
+impl<'a, K, V> ValuesMut<'a, K, V> {
+    pub fn new(node: &'a mut Node<K, V>) -> ValuesMut<'a, K, V> {
+        ValuesMut { stack: vec![node] }
+    }
+}
+
+
+impl<'a, K, V> Default for ValuesMut<'a, K, V> {
+    fn default() -> Self {
+        ValuesMut { stack: vec![] }
+    }
+}
+
+
+impl<'a, K: 'a, V: 'a> Iterator for ValuesMut<'a, K, V> {
+    type Item = &'a mut V;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.stack.pop() {
+            Some(&mut Node::Leaf(ref mut leaf)) => Some(&mut leaf.val),
+            Some(&mut Node::Branch(ref mut branch)) => {
+                self.stack.extend(branch.iter_mut().rev());
+                self.next()
+            }
+            None => None,
+        }
+    }
+}

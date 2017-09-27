@@ -4,7 +4,7 @@ use std::iter::FromIterator;
 use std::ops::{Index, IndexMut};
 
 use entry::{make_entry, Entry};
-use iter::{Iter, IterMut, IntoIter};
+use iter::{Iter, IterMut, IntoIter, Keys, Values, ValuesMut};
 use node::{Node, Leaf};
 use subtrie::SubTrie;
 use util::nybble_mismatch;
@@ -145,6 +145,45 @@ impl<K, V> Trie<K, V> {
             None => IterMut::default(),
         }
     }
+
+
+    /// Iterate over all keys in the trie.
+    pub fn keys(&self) -> Keys<K, V> {
+        match self.root {
+            Some(ref node) => Keys::new(node),
+            None => Keys::default(),
+        }
+    }
+
+
+    /// Iterate over all values in the trie.
+    pub fn values(&self) -> Values<K, V> {
+        match self.root {
+            Some(ref node) => Values::new(node),
+            None => Values::default(),
+        }
+    }
+
+
+    /// Iterate over all values in the trie, mutably.
+    pub fn values_mut(&mut self) -> ValuesMut<K, V> {
+        match self.root {
+            Some(ref mut node) => ValuesMut::new(node),
+            None => ValuesMut::default(),
+        }
+    }
+
+
+    /// Remove all entries from the trie, leaving it empty.
+    pub fn clear(&mut self) {
+        self.root = None;
+    }
+
+
+    /// Returns true if the trie has no entries.
+    pub fn is_empty(&self) -> bool {
+        self.root.is_none()
+    }
 }
 
 
@@ -220,6 +259,19 @@ impl<K: Borrow<[u8]>, V> Trie<K, V> {
     /// TODO: Speed this up by tracking the size of the trie for each insert/removal.
     pub fn count(&self) -> usize {
         self.root.as_ref().map(Node::count).unwrap_or(0)
+    }
+
+
+    /// Returns true if there is an entry for the given key.
+    pub fn contains_key<'a, Q: ?Sized>(&self, key: &'a Q) -> bool
+    where
+        K: Borrow<Q>,
+        Q: Borrow<[u8]>,
+    {
+        self.root
+            .as_ref()
+            .and_then(|node| node.get(key.borrow()))
+            .is_some()
     }
 
 
@@ -382,6 +434,14 @@ impl<V> Trie<BString, V> {
         self.subtrie(AsRef::<BStr>::as_ref(prefix.borrow()))
     }
 
+
+    /// Returns true if there is an entry for the given string key.
+    pub fn contains_key_str<'a, Q: ?Sized>(&self, key: &'a Q) -> bool
+    where
+        Q: Borrow<str>,
+    {
+        self.contains_key(AsRef::<BStr>::as_ref(key.borrow()))
+    }
 
     /// Convenience function for getting with a string.
     pub fn get_str<'a, Q: ?Sized>(&self, key: &'a Q) -> Option<&V>
