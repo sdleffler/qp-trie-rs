@@ -5,6 +5,7 @@ use std::ops::{Index, IndexMut};
 
 use entry::{make_entry, Entry};
 use iter::{IntoIter, Iter, IterMut, Keys, Values, ValuesMut};
+use key::{AsKey, Break};
 use node::{Leaf, Node};
 use subtrie::SubTrie;
 use util::nybble_mismatch;
@@ -16,7 +17,7 @@ use wrapper::{BStr, BString};
 /// which can be converted to a slice of bytes.
 ///
 /// The following example uses the provided string wrapper. Unfortunately, `String`/`str` cannot be
-/// used directly because they do not implement `Borrow<[u8]>` (as they do not hash the same way as
+/// used directly because they do not implement `AsKey` (as they do not hash the same way as
 /// a byte slice.) As a stopgap, `qp_trie::wrapper::{BString, BStr}` are provided, as are the
 /// `.whatever_str()` convenience methods on `qp_trie::Trie<BString, _>`.
 ///
@@ -92,7 +93,7 @@ impl<K, V> IntoIterator for Trie<K, V> {
     }
 }
 
-impl<K: Borrow<[u8]>, V> FromIterator<(K, V)> for Trie<K, V> {
+impl<K: AsKey, V> FromIterator<(K, V)> for Trie<K, V> {
     fn from_iter<I>(iterable: I) -> Trie<K, V>
     where
         I: IntoIterator<Item = (K, V)>,
@@ -107,7 +108,7 @@ impl<K: Borrow<[u8]>, V> FromIterator<(K, V)> for Trie<K, V> {
     }
 }
 
-impl<K: Borrow<[u8]>, V> Extend<(K, V)> for Trie<K, V> {
+impl<K: AsKey, V> Extend<(K, V)> for Trie<K, V> {
     fn extend<I>(&mut self, iterable: I)
     where
         I: IntoIterator<Item = (K, V)>,
@@ -178,17 +179,16 @@ impl<K, V> Trie<K, V> {
     }
 }
 
-impl<K: Borrow<[u8]>, V> Trie<K, V> {
+impl<K: AsKey, V> Trie<K, V> {
     /// Iterate over all elements with a given prefix.
     pub fn iter_prefix<'a, Q: ?Sized>(&self, prefix: &'a Q) -> Iter<K, V>
     where
-        K: Borrow<Q>,
-        Q: Borrow<[u8]>,
+        Q: Borrow<K::Borrowed>,
     {
         match self
             .root
             .as_ref()
-            .and_then(|node| node.get_prefix(prefix.borrow()))
+            .and_then(|node| node.get_prefix(K::nybbles_from(prefix.borrow())))
         {
             Some(node) => Iter::new(node),
             None => Iter::default(),
@@ -199,13 +199,12 @@ impl<K: Borrow<[u8]>, V> Trie<K, V> {
     /// associated value.
     pub fn iter_prefix_mut<'a, Q: ?Sized>(&mut self, prefix: &'a Q) -> IterMut<K, V>
     where
-        K: Borrow<Q>,
-        Q: Borrow<[u8]>,
+        Q: Borrow<K::Borrowed>,
     {
         match self
             .root
             .as_mut()
-            .and_then(|node| node.get_prefix_mut(prefix.borrow()))
+            .and_then(|node| node.get_prefix_mut(K::nybbles_from(prefix.borrow())))
         {
             Some(node) => IterMut::new(node),
             None => IterMut::default(),
@@ -215,30 +214,30 @@ impl<K: Borrow<[u8]>, V> Trie<K, V> {
     /// Get an immutable view into the trie, providing only values keyed with the given prefix.
     pub fn subtrie<'a, Q: ?Sized>(&self, prefix: &'a Q) -> SubTrie<K, V>
     where
-        K: Borrow<Q>,
-        Q: Borrow<[u8]>,
+        K: Break<Q>,
+        Q: Borrow<K::Borrowed>,
     {
         SubTrie {
             root: self
                 .root
                 .as_ref()
-                .and_then(|node| node.get_prefix(prefix.borrow())),
+                .and_then(|node| node.get_prefix(K::nybbles_from(prefix.borrow()))),
         }
     }
 
     /// Get the longest common prefix of all the nodes in the trie and the given key.
-    pub fn longest_common_prefix<'a, Q: ?Sized>(&self, key: &'a Q) -> &K::Split
+    pub fn longest_common_prefix<'a, Q: ?Sized>(&self, key: &'a Q) -> &Q
     where
-        K: Borrow<Q> + Break,
-        Q: Borrow<[u8]>,
+        K: Break<Q>,
+        Q: Borrow<K::Borrowed>,
     {
         match self.root.as_ref() {
             Some(root) => {
-                let exemplar = root.get_exemplar(key.borrow());
+                let exemplar = root.get_exemplar(K::nybbles_from(key.borrow()));
 
-                match nybble_mismatch(exemplar.key_slice(), key.borrow()) {
+                match nybble_mismatch(exemplar.key_slice(), K::nybbles_from(key.borrow())) {
                     Some(i) => exemplar.key.find_break(i / 2),
-                    None => exemplar.key.borrow(),
+                    None => exemplar.key.whole(),
                 }
             }
             None => K::empty(),
@@ -253,36 +252,33 @@ impl<K: Borrow<[u8]>, V> Trie<K, V> {
     /// Returns true if there is an entry for the given key.
     pub fn contains_key<'a, Q: ?Sized>(&self, key: &'a Q) -> bool
     where
-        K: Borrow<Q>,
-        Q: Borrow<[u8]>,
+        Q: Borrow<K::Borrowed>,
     {
         self.root
             .as_ref()
-            .and_then(|node| node.get(key.borrow()))
+            .and_then(|node| node.get(K::nybbles_from(key.borrow())))
             .is_some()
     }
 
     /// Get an immutable reference to the value associated with a given key, if it is in the tree.
     pub fn get<'a, Q: ?Sized>(&self, key: &'a Q) -> Option<&V>
     where
-        K: Borrow<Q>,
-        Q: Borrow<[u8]>,
+        Q: Borrow<K::Borrowed>,
     {
         self.root
             .as_ref()
-            .and_then(|node| node.get(key.borrow()))
+            .and_then(|node| node.get(K::nybbles_from(key.borrow())))
             .map(|leaf| &leaf.val)
     }
 
     /// Get a mutable reference to the value associated with a given key, if it is in the tree.
     pub fn get_mut<'a, Q: ?Sized>(&mut self, key: &'a Q) -> Option<&mut V>
     where
-        K: Borrow<Q>,
-        Q: Borrow<[u8]>,
+        Q: Borrow<K::Borrowed>,
     {
         self.root
             .as_mut()
-            .and_then(|node| node.get_mut(key.borrow()))
+            .and_then(|node| node.get_mut(K::nybbles_from(key.borrow())))
             .map(|leaf| &mut leaf.val)
     }
 
@@ -308,10 +304,9 @@ impl<K: Borrow<[u8]>, V> Trie<K, V> {
     /// `Some(val)` if a corresponding key/value pair was found.
     pub fn remove<Q: ?Sized>(&mut self, key: &Q) -> Option<V>
     where
-        K: Borrow<Q>,
-        Q: Borrow<[u8]>,
+        Q: Borrow<K::Borrowed>,
     {
-        let node = Node::remove(&mut self.root, key.borrow()).map(|leaf| leaf.val);
+        let node = Node::remove(&mut self.root, K::nybbles_from(key.borrow())).map(|leaf| leaf.val);
         if node.is_some() {
             self.count -= 1;
         }
@@ -321,25 +316,26 @@ impl<K: Borrow<[u8]>, V> Trie<K, V> {
     /// Remove all elements beginning with a given prefix from the trie, producing a subtrie.
     pub fn remove_prefix<'a, Q: ?Sized>(&mut self, prefix: &'a Q) -> Trie<K, V>
     where
-        K: Borrow<Q>,
-        Q: Borrow<[u8]>,
+        Q: Borrow<K::Borrowed>,
     {
-        let root = Node::remove_prefix(&mut self.root, prefix.borrow());
+        let root = Node::remove_prefix(&mut self.root, K::nybbles_from(prefix.borrow()));
         let count = root.as_ref().map(Node::count).unwrap_or(0);
         self.count -= count;
         Trie { root, count }
     }
 
     /// Get the corresponding entry for the given key.
-    pub fn entry(&mut self, key: K) -> Entry<K, V> {
+    pub fn entry(&mut self, key: K) -> Entry<K, V>
+    where
+        K: AsKey,
+    {
         make_entry(key, &mut self.root)
     }
 }
 
-impl<'a, K: Borrow<[u8]>, V, Q: ?Sized> Index<&'a Q> for Trie<K, V>
+impl<'a, K: AsKey, V, Q: ?Sized> Index<&'a Q> for Trie<K, V>
 where
-    K: Borrow<Q>,
-    Q: Borrow<[u8]>,
+    Q: Borrow<K::Borrowed>,
 {
     type Output = V;
 
@@ -348,48 +344,12 @@ where
     }
 }
 
-impl<'a, K: Borrow<[u8]>, V, Q: ?Sized> IndexMut<&'a Q> for Trie<K, V>
+impl<'a, K: AsKey, V, Q: ?Sized> IndexMut<&'a Q> for Trie<K, V>
 where
-    K: Borrow<Q>,
-    Q: Borrow<[u8]>,
+    Q: Borrow<K::Borrowed>,
 {
     fn index_mut(&mut self, key: &Q) -> &mut V {
         self.get_mut(key).unwrap()
-    }
-}
-
-pub trait Break: Borrow<<Self as Break>::Split> {
-    type Split: ?Sized;
-
-    fn empty<'a>() -> &'a Self::Split;
-    fn find_break(&self, loc: usize) -> &Self::Split;
-}
-
-impl Break for [u8] {
-    type Split = [u8];
-
-    #[inline]
-    fn empty<'a>() -> &'a [u8] {
-        <&'a [u8]>::default()
-    }
-
-    #[inline]
-    fn find_break(&self, loc: usize) -> &[u8] {
-        &self[..loc]
-    }
-}
-
-impl<'b> Break for &'b [u8] {
-    type Split = [u8];
-
-    #[inline]
-    fn empty<'a>() -> &'a [u8] {
-        <&'a [u8]>::default()
-    }
-
-    #[inline]
-    fn find_break(&self, loc: usize) -> &[u8] {
-        &self[..loc]
     }
 }
 
@@ -415,7 +375,7 @@ impl<V> Trie<BString, V> {
     where
         Q: Borrow<str>,
     {
-        self.subtrie(AsRef::<BStr>::as_ref(prefix.borrow()))
+        self.subtrie(prefix.borrow().as_ref())
     }
 
     /// Returns true if there is an entry for the given string key.

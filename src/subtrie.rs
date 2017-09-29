@@ -1,8 +1,8 @@
-use std::borrow::Borrow;
 use std::fmt;
 use std::ops::Index;
 
 use iter::Iter;
+use key::AsKey;
 use node::Node;
 
 pub struct SubTrie<'a, K: 'a, V: 'a> {
@@ -34,7 +34,7 @@ impl<'a, K: 'a, V: 'a> SubTrie<'a, K, V> {
     }
 }
 
-impl<'a, K: Borrow<[u8]>, V> SubTrie<'a, K, V> {
+impl<'a, K: AsKey, V> SubTrie<'a, K, V> {
     pub fn iter(&self) -> Iter<K, V> {
         match self.root {
             Some(node) => node.iter(),
@@ -42,27 +42,32 @@ impl<'a, K: Borrow<[u8]>, V> SubTrie<'a, K, V> {
         }
     }
 
-    pub fn iter_prefix<L: Borrow<[u8]>>(&self, prefix: L) -> Iter<K, V> {
-        match self.root.and_then(|node| node.get_prefix(prefix.borrow())) {
+    pub fn iter_prefix<L: AsKey>(&self, prefix: L) -> Iter<K, V> {
+        match self
+            .root
+            .and_then(|node| node.get_prefix(prefix.as_nybbles()))
+        {
             Some(node) => node.iter(),
             None => Iter::default(),
         }
     }
 
-    pub fn subtrie<L: Borrow<[u8]>>(&self, prefix: L) -> SubTrie<K, V> {
+    pub fn subtrie<L: AsKey>(&self, prefix: L) -> SubTrie<K, V> {
         SubTrie {
-            root: self.root.and_then(|node| node.get_prefix(prefix.borrow())),
+            root: self
+                .root
+                .and_then(|node| node.get_prefix(prefix.as_nybbles())),
         }
     }
 
-    pub fn get<L: Borrow<[u8]>>(&self, key: L) -> Option<&V> {
+    pub fn get<L: AsKey>(&self, key: L) -> Option<&V> {
         self.root
-            .and_then(|node| node.get(key.borrow()))
+            .and_then(|node| node.get(key.as_nybbles()))
             .map(|leaf| &leaf.val)
     }
 }
 
-impl<'a, K: Borrow<[u8]>, V, L: Borrow<[u8]>> Index<L> for SubTrie<'a, K, V> {
+impl<'a, K: AsKey, V, L: AsKey> Index<L> for SubTrie<'a, K, V> {
     type Output = V;
 
     fn index(&self, key: L) -> &V {

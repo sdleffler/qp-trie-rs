@@ -1,13 +1,13 @@
-use std::borrow::Borrow;
 use std::marker::PhantomData;
 use std::mem;
 
 use unreachable::UncheckedOptionExt;
 
+use key::AsKey;
 use node::{Leaf, Node};
 use util::nybble_get_mismatch;
 
-pub fn make_entry<'a, K: 'a + Borrow<[u8]>, V: 'a>(
+pub fn make_entry<'a, K: 'a + AsKey, V: 'a>(
     key: K,
     root: &'a mut Option<Node<K, V>>,
 ) -> Entry<'a, K, V> {
@@ -24,12 +24,12 @@ pub enum Entry<'a, K: 'a, V: 'a> {
     Occupied(OccupiedEntry<'a, K, V>),
 }
 
-impl<'a, K: 'a + Borrow<[u8]>, V: 'a> Entry<'a, K, V> {
+impl<'a, K: 'a + AsKey, V: 'a> Entry<'a, K, V> {
     fn nonempty(key: K, root: &'a mut Option<Node<K, V>>) -> Entry<'a, K, V> {
         let (exemplar_ptr, mismatch) = {
             let node = unsafe { root.as_mut().unchecked_unwrap() };
-            let exemplar = node.get_exemplar_mut(key.borrow());
-            let mismatch = nybble_get_mismatch(exemplar.key_slice(), key.borrow());
+            let exemplar = node.get_exemplar_mut(key.as_nybbles());
+            let mismatch = nybble_get_mismatch(exemplar.key_slice(), key.as_nybbles());
             (exemplar as *mut Leaf<K, V>, mismatch)
         };
 
@@ -112,7 +112,7 @@ enum VacantEntryInner<'a, K: 'a, V: 'a> {
     Internal(usize, u8, &'a mut Node<K, V>),
 }
 
-impl<'a, K: 'a + Borrow<[u8]>, V: 'a> VacantEntry<'a, K, V> {
+impl<'a, K: 'a + AsKey, V: 'a> VacantEntry<'a, K, V> {
     /// Get a reference to the key associated with this vacant entry.
     pub fn key(&self) -> &K {
         &self.key
@@ -151,7 +151,7 @@ pub struct OccupiedEntry<'a, K: 'a, V: 'a> {
     root: *mut Option<Node<K, V>>,
 }
 
-impl<'a, K: 'a + Borrow<[u8]>, V: 'a> OccupiedEntry<'a, K, V> {
+impl<'a, K: 'a + AsKey, V: 'a> OccupiedEntry<'a, K, V> {
     /// Get a reference to the key of the entry.
     pub fn key(&self) -> &K {
         let leaf = unsafe { &*self.leaf };
@@ -167,7 +167,7 @@ impl<'a, K: 'a + Borrow<[u8]>, V: 'a> OccupiedEntry<'a, K, V> {
                 let leaf_opt = root.take();
                 let leaf = unsafe { leaf_opt.unchecked_unwrap().unwrap_leaf() };
 
-                debug_assert!(leaf.key_slice() == self.key().borrow());
+                debug_assert!(leaf.key_slice() == self.key().as_nybbles());
                 (leaf.key, leaf.val)
             }
 
@@ -175,7 +175,7 @@ impl<'a, K: 'a + Borrow<[u8]>, V: 'a> OccupiedEntry<'a, K, V> {
                 let branch_opt = root.as_mut();
                 let branch = unsafe { branch_opt.unchecked_unwrap() };
 
-                let leaf_opt = branch.remove_validated(self.key().borrow());
+                let leaf_opt = branch.remove_validated(self.key().as_nybbles());
 
                 debug_assert!(leaf_opt.is_some());
                 let leaf = unsafe { leaf_opt.unchecked_unwrap() };

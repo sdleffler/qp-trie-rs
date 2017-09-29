@@ -3,7 +3,7 @@ use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 
-use trie::Break;
+use key::AsKey;
 
 /// A wrapper for `String` which implements `Borrow<[u8]>` and hashes in the same way as a byte
 /// slice.
@@ -61,24 +61,36 @@ impl Borrow<[u8]> for BString {
     }
 }
 
+impl AsRef<str> for BString {
+    #[inline]
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
+
+impl AsRef<[u8]> for BString {
+    #[inline]
+    fn as_ref(&self) -> &[u8] {
+        self.0.as_bytes()
+    }
+}
+
+impl AsKey for BString {
+    type Borrowed = str;
+
+    fn nybbles_from(key: &str) -> &[u8] {
+        key.as_bytes()
+    }
+
+    fn as_nybbles(&self) -> &[u8] {
+        self.0.as_bytes()
+    }
+}
+
 impl Hash for BString {
     #[inline]
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.0.as_bytes().hash(state);
-    }
-}
-
-impl Break for BString {
-    type Split = BStr;
-
-    #[inline]
-    fn empty<'a>() -> &'a BStr {
-        BStr::empty()
-    }
-
-    #[inline]
-    fn find_break(&self, loc: usize) -> &BStr {
-        (**self).find_break(loc)
     }
 }
 
@@ -108,6 +120,13 @@ impl ToOwned for BStr {
     }
 }
 
+impl Borrow<str> for BStr {
+    #[inline]
+    fn borrow(&self) -> &str {
+        &self.0
+    }
+}
+
 impl Borrow<[u8]> for BStr {
     #[inline]
     fn borrow(&self) -> &[u8] {
@@ -115,28 +134,22 @@ impl Borrow<[u8]> for BStr {
     }
 }
 
+impl AsRef<str> for BStr {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
+
+impl AsRef<[u8]> for BStr {
+    fn as_ref(&self) -> &[u8] {
+        &self.0.as_bytes()
+    }
+}
+
 impl Hash for BStr {
     #[inline]
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.0.as_bytes().hash(state);
-    }
-}
-
-impl Break for BStr {
-    type Split = BStr;
-
-    #[inline]
-    fn empty<'a>() -> &'a BStr {
-        <&'a BStr>::from(<&'a str>::default())
-    }
-
-    #[inline]
-    fn find_break(&self, mut loc: usize) -> &BStr {
-        while !self.0.is_char_boundary(loc) {
-            loc -= 1;
-        }
-
-        From::from(&self.as_str()[..loc])
     }
 }
 
