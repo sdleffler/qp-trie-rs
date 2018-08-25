@@ -31,6 +31,14 @@ impl<'a, K: 'a, V: 'a> IntoIterator for SubTrie<'a, K, V> {
 }
 
 
+impl<'a, K: 'a, V: 'a> SubTrie<'a, K, V> {
+    /// Returns true if the subtrie has no entries.
+    pub fn is_empty(&self) -> bool {
+        self.root.is_none()
+    }
+}
+
+
 impl<'a, K: Borrow<[u8]>, V> SubTrie<'a, K, V> {
     pub fn iter(&self) -> Iter<K, V> {
         match self.root {
