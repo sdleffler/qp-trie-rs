@@ -4,3 +4,4 @@ rust:
   - stable
   - beta
   - nightly
+script: cargo test --features serde
