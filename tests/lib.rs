@@ -201,7 +201,7 @@ quickcheck! {
     #[cfg(feature = "serde")]
     fn serialize(kvs: Vec<(Vec<u8>, usize)>) -> bool {
         let original: Trie<Vec<u8>, usize> = kvs.into_iter().collect();
-        let serialized = bincode::serialize(&original, bincode::Infinite).unwrap();
+        let serialized = bincode::serialize(&original).unwrap();
         let deserialized: Trie<_, _> = bincode::deserialize(&serialized).unwrap();
 
         deserialized == original
@@ -215,7 +215,7 @@ quickcheck! {
             trie.remove(&k);
         }
 
-        let serialized = bincode::serialize(&trie, bincode::Infinite).unwrap();
+        let serialized = bincode::serialize(&trie).unwrap();
         let deserialized: Trie<Vec<u8>, usize> = bincode::deserialize(&serialized).unwrap();
 
         deserialized == Trie::new()
@@ -442,7 +442,7 @@ fn serialize_max_branching_factor(){
     });
 
     let original: Trie<Vec<u8>, u8> = kvs.collect();
-    let serialized = bincode::serialize(&original, bincode::Infinite).unwrap();
+    let serialized = bincode::serialize(&original).unwrap();
     let deserialized: Trie<_, _> = bincode::deserialize(&serialized).unwrap();
 
     assert_eq!(deserialized, original);
