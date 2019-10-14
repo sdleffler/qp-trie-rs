@@ -482,40 +482,41 @@ impl<K: Borrow<[u8]>, V> Node<K, V> {
         key: K,
         val: V,
     ) -> &mut V {
-        match *self {
-            Node::Branch(ref mut branch) if branch.choice <= graft => {
-                let index = branch.index(key.borrow());
-
-                if branch.has_entry(index) {
-                    branch.entry_mut(index).insert_with_graft_point(
-                        graft,
-                        graft_nybble,
-                        key,
-                        val,
-                    )
-                } else {
-                    &mut branch.insert_leaf(Leaf::new(key, val)).val
-                }
-            }
-
-            _ => {
-                let node = mem::replace(self, Node::Branch(Branch::new(graft)));
-
+        let node = mem::replace(self, Node::Branch(Branch::new(graft)));
+        let graft_branch = match node {
+            Node::Leaf(leaf) => {
                 // unsafe: we've just replaced self with a branch.
                 let graft_branch = unsafe { self.unwrap_branch_mut() };
-
-                match node {
-                    Node::Leaf(leaf) => {
-                        graft_branch.insert_leaf(leaf);
-                    }
-                    Node::Branch(branch) => {
-                        graft_branch.insert_branch(graft_nybble, branch);
-                    }
-                }
-
-                &mut graft_branch.insert_leaf(Leaf::new(key, val)).val
+                graft_branch.insert_leaf(leaf);
+                graft_branch
             }
-        }
+            Node::Branch(branch) => {
+                if branch.choice <= graft {
+                    mem::replace(self, Node::Branch(branch));
+                    if let Node::Branch(ref mut branch) = *self {
+                        let index = branch.index(key.borrow());
+
+                        return if branch.has_entry(index) {
+                            branch.entry_mut(index).insert_with_graft_point(
+                                graft,
+                                graft_nybble,
+                                key,
+                                val,
+                            )
+                        } else {
+                            &mut branch.insert_leaf(Leaf::new(key, val)).val
+                        };
+                    }
+                    unreachable!();
+                }
+                // unsafe: we've just replaced self with a branch.
+                let graft_branch = unsafe { self.unwrap_branch_mut() };
+                graft_branch.insert_branch(graft_nybble, branch);
+                graft_branch
+            }
+        };
+
+        &mut graft_branch.insert_leaf(Leaf::new(key, val)).val
     }
 
 
