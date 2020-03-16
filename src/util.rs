@@ -11,7 +11,7 @@ pub fn nybble_index(n: usize, slice: &[u8]) -> u8 {
     if byte_idx < slice.len() {
         let byte = slice[byte_idx];
 
-        // If the index is even, return the lower nybble. Even, the higher nybble.
+        // If the index is even, return the lower nybble. Odd, the higher nybble.
         // In both cases, increment by one. The zero-index is reserved for the "head" of the sparse
         // array.
         if n & 1 == 0 {
