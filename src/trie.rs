@@ -69,6 +69,7 @@ use wrapper::{BString, BStr};
 #[derive(Clone, PartialEq, Eq, Default)]
 pub struct Trie<K, V> {
     root: Option<Node<K, V>>,
+    count: usize,
 }
 
 
@@ -125,7 +126,7 @@ impl<K: Borrow<[u8]>, V> Extend<(K, V)> for Trie<K, V> {
 impl<K, V> Trie<K, V> {
     /// Create a new, empty trie.
     pub fn new() -> Trie<K, V> {
-        Trie { root: None }
+        Trie { root: None, count: 0 }
     }
 
 
@@ -253,12 +254,9 @@ impl<K: Borrow<[u8]>, V> Trie<K, V> {
     }
 
 
-    /// Count the number of entries in the tree. This is currently slow - it traverses the entire
-    /// trie!
-    ///
-    /// TODO: Speed this up by tracking the size of the trie for each insert/removal.
+    /// Count the number of entries in the tree.
     pub fn count(&self) -> usize {
-        self.root.as_ref().map(Node::count).unwrap_or(0)
+        self.count
     }
 
 
@@ -304,9 +302,16 @@ impl<K: Borrow<[u8]>, V> Trie<K, V> {
     /// Insert a key/value pair into the trie, returning the old value if an entry already existed.
     pub fn insert(&mut self, key: K, val: V) -> Option<V> {
         match self.root {
-            Some(ref mut root) => root.insert(key, val),
+            Some(ref mut root) => {
+                let old = root.insert(key, val);
+                if old.is_none() {
+                    self.count += 1;
+                }
+                old
+            }
             None => {
                 self.root = Some(Node::Leaf(Leaf::new(key, val)));
+                self.count += 1;
                 None
             }
         }
@@ -320,7 +325,11 @@ impl<K: Borrow<[u8]>, V> Trie<K, V> {
         K: Borrow<Q>,
         Q: Borrow<[u8]>,
     {
-        Node::remove(&mut self.root, key.borrow()).map(|leaf| leaf.val)
+        let node = Node::remove(&mut self.root, key.borrow()).map(|leaf| leaf.val);
+        if node.is_some() {
+            self.count -= 1;
+        }
+        node
     }
 
 
@@ -330,7 +339,9 @@ impl<K: Borrow<[u8]>, V> Trie<K, V> {
         K: Borrow<Q>,
         Q: Borrow<[u8]>,
     {
-        Trie { root: Node::remove_prefix(&mut self.root, prefix.borrow()) }
+        let root = Node::remove_prefix(&mut self.root, prefix.borrow());
+        let count = root.as_ref().map(Node::count).unwrap_or(0);
+        Trie { root, count }
     }
 
 
