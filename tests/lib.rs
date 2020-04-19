@@ -11,7 +11,7 @@ extern crate qp_trie;
 
 
 use quickcheck::TestResult;
-use rand::Rng;
+use rand::seq::SliceRandom;
 use std::collections::HashMap;
 
 use qp_trie::*;
@@ -23,7 +23,7 @@ quickcheck! {
         let mut rng = rand::thread_rng();
         elts.sort_by_key(|e| e.0);
         elts.dedup_by_key(|e| e.0);
-        rng.shuffle(&mut elts);
+        elts.shuffle(&mut rng);
 
         let hashmap: HashMap<u8, u64> = elts.iter().cloned().collect();
         let trie = {
