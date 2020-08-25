@@ -467,7 +467,7 @@ fn serialize_pathological_branching() {
 }
 
 #[test]
-fn remove_prefix() {
+fn issue_22_regression_remove_prefix() {
     let mut trie = Trie::new();
     for i in 0..10 {
         let mut bytes = [0; 16];

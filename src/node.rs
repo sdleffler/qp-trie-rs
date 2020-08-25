@@ -696,7 +696,7 @@ impl<K: Borrow<[u8]>, V> Node<K, V> {
                 // unsafe: same rationale.
                 if unsafe { root.as_ref().unchecked_unwrap().unwrap_branch_ref() }
                     
-                    .choice <= prefix.len()
+                    .choice >= prefix.len() * 2
                 {
                     root.take()
                 } else {
