@@ -341,6 +341,7 @@ impl<K: Borrow<[u8]>, V> Trie<K, V> {
     {
         let root = Node::remove_prefix(&mut self.root, prefix.borrow());
         let count = root.as_ref().map(Node::count).unwrap_or(0);
+        self.count -= count;
         Trie { root, count }
     }
 
