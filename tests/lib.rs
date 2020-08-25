@@ -465,3 +465,21 @@ fn serialize_pathological_branching() {
 
     assert_eq!(deserialized, original);
 }
+
+#[test]
+fn issue_22_regression_remove_prefix() {
+    let mut trie = Trie::new();
+    for i in 0..10 {
+        let mut bytes = [0; 16];
+        let (left, right) = bytes.split_at_mut(8);
+        left.copy_from_slice(&u64::to_be_bytes(i));
+        right.copy_from_slice(&u64::to_be_bytes(i));
+        trie.insert(bytes, ());
+    }
+    assert_eq!(trie.count(), 10);
+    for i in 0..5 {
+        let subtrie = trie.remove_prefix(&u64::to_be_bytes(i)[..]);
+        assert_eq!(subtrie.count(), 1);
+    }
+    assert_eq!(trie.count(), 5);
+}
