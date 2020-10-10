@@ -634,14 +634,12 @@ impl<K: Borrow<[u8]>, V> Node<K, V> {
             Some(Node::Branch(..))
                 // unsafe: root has been matched as some branch.
                 if unsafe { root.as_ref().unchecked_unwrap().unwrap_branch_ref() }
-                       
                        .get_exemplar(prefix)
                        .key_slice()
                        .starts_with(prefix) => {
 
                 // unsafe: same rationale.
                 if unsafe { root.as_ref().unchecked_unwrap().unwrap_branch_ref() }
-                    
                     .choice >= prefix.len() * 2
                 {
                     root.take()
