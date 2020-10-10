@@ -4,7 +4,7 @@ use std::mem;
 
 use unreachable::UncheckedOptionExt;
 
-use iter::{Iter, IterMut, IntoIter};
+use iter::{IntoIter, Iter, IterMut};
 use sparse::Sparse;
 use util::{nybble_index, nybble_mismatch};
 
@@ -15,17 +15,12 @@ pub struct Leaf<K, V> {
     pub val: V,
 }
 
-
 impl<K, V> Leaf<K, V> {
     #[inline]
     pub fn new(key: K, val: V) -> Leaf<K, V> {
-        Leaf {
-            key,
-            val,
-        }
+        Leaf { key, val }
     }
 }
-
 
 impl<K: Borrow<[u8]>, V> Leaf<K, V> {
     #[inline]
@@ -33,7 +28,6 @@ impl<K: Borrow<[u8]>, V> Leaf<K, V> {
         self.key.borrow()
     }
 }
-
 
 // A branch node in the QP-trie. It contains up to 17 entries, only 16 of which may actually be
 // other branches - the 0th entry, if it exists in the sparse array, is the "head" of the branch,
@@ -47,9 +41,7 @@ pub struct Branch<K, V> {
     entries: Sparse<Node<K, V>>,
 }
 
-
-impl<K: fmt::Debug, V: fmt::Debug> fmt::Debug for Branch<K, V>
-{
+impl<K: fmt::Debug, V: fmt::Debug> fmt::Debug for Branch<K, V> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("Branch")
             .field("choice", &self.choice)
@@ -57,7 +49,6 @@ impl<K: fmt::Debug, V: fmt::Debug> fmt::Debug for Branch<K, V>
             .finish()
     }
 }
-
 
 impl<K: Borrow<[u8]>, V> Branch<K, V> {
     // Create an empty `Branch` with the given choice point.
@@ -69,13 +60,11 @@ impl<K: Borrow<[u8]>, V> Branch<K, V> {
         }
     }
 
-
     // Return the nybble index corresponding to the branch's choice point in the given key.
     #[inline]
     pub fn index(&self, key: &[u8]) -> u8 {
         nybble_index(self.choice, key)
     }
-
 
     // Returns true if and only if the `Branch` has only one child. This is used for determining
     // whether or not to replace a branch with its only child.
@@ -84,12 +73,10 @@ impl<K: Borrow<[u8]>, V> Branch<K, V> {
         self.entries.len() == 1
     }
 
-
     #[inline]
     pub fn has_entry(&self, index: u8) -> bool {
         self.entries.contains(index)
     }
-
 
     #[inline]
     pub fn entry_mut(&mut self, index: u8) -> &mut Node<K, V> {
@@ -98,22 +85,18 @@ impl<K: Borrow<[u8]>, V> Branch<K, V> {
         unsafe { entry.unchecked_unwrap() }
     }
 
-
     // Get the child node corresponding to the given key.
     #[inline]
     pub fn child(&self, key: &[u8]) -> Option<&Node<K, V>> {
         self.entries.get(nybble_index(self.choice, key.borrow()))
     }
 
-
     // Mutable version of `Branch::child`.
     #[inline]
     pub fn child_mut(&mut self, key: &[u8]) -> Option<&mut Node<K, V>> {
-        self.entries.get_mut(
-            nybble_index(self.choice, key.borrow()),
-        )
+        self.entries
+            .get_mut(nybble_index(self.choice, key.borrow()))
     }
-
 
     // Immutably borrow the leaf for the given key, if it exists, mutually recursing through
     // `Node::get`.
@@ -125,35 +108,28 @@ impl<K: Borrow<[u8]>, V> Branch<K, V> {
         }
     }
 
-
     // Mutably borrow the value for the given key, if it exists, mutually recursing through
     // `Node::get_mut`.
     #[inline]
     pub fn get_mut(&mut self, key: &[u8]) -> Option<&mut Leaf<K, V>> {
-        self.child_mut(key.borrow()).and_then(
-            |node| node.get_mut(key),
-        )
+        self.child_mut(key.borrow())
+            .and_then(|node| node.get_mut(key))
     }
-
 
     // Retrieve the node which contains the exemplar. This does not recurse and return the actual
     // exemplar - just the node which might be or contain it.
     #[inline]
     pub fn exemplar(&self, key: &[u8]) -> &Node<K, V> {
-        self.entries.get_or_any(
-            nybble_index(self.choice, key.borrow()),
-        )
+        self.entries
+            .get_or_any(nybble_index(self.choice, key.borrow()))
     }
-
 
     // As `Branch::exemplar` but for mutable borrows.
     #[inline]
     pub fn exemplar_mut(&mut self, key: &[u8]) -> &mut Node<K, V> {
-        self.entries.get_or_any_mut(
-            nybble_index(self.choice, key.borrow()),
-        )
+        self.entries
+            .get_or_any_mut(nybble_index(self.choice, key.borrow()))
     }
-
 
     // Immutably borrow the exemplar for the given key, mutually recursing through
     // `Node::get_exemplar`.
@@ -162,14 +138,12 @@ impl<K: Borrow<[u8]>, V> Branch<K, V> {
         self.exemplar(key.borrow()).get_exemplar(key)
     }
 
-
     // Mutably borrow the exemplar for the given key, mutually recursing through
     // `Node::get_exemplar_mut`.
     #[inline]
     pub fn get_exemplar_mut(&mut self, key: &[u8]) -> &mut Leaf<K, V> {
         self.exemplar_mut(key.borrow()).get_exemplar_mut(key)
     }
-
 
     // Convenience method for inserting a leaf into the branch's sparse array.
     #[inline]
@@ -182,7 +156,6 @@ impl<K: Borrow<[u8]>, V> Branch<K, V> {
         unsafe { node_mut.unwrap_leaf_mut() }
     }
 
-
     // Convenience method for inserting a branch into the branch's sparse array.
     #[inline]
     pub fn insert_branch(&mut self, index: u8, branch: Branch<K, V>) -> &mut Branch<K, V> {
@@ -191,14 +164,12 @@ impl<K: Borrow<[u8]>, V> Branch<K, V> {
         unsafe { node_mut.unwrap_branch_mut() }
     }
 
-
     // Assuming that the provided index is valid, remove the node with that nybble index and
     // return it.
     #[inline]
     pub fn remove(&mut self, index: u8) -> Node<K, V> {
         self.entries.remove(index)
     }
-
 
     // Assuming that the branch node has only one element back, remove it and return it in
     // preparation for replacement with a leaf.
@@ -208,7 +179,6 @@ impl<K: Borrow<[u8]>, V> Branch<K, V> {
     }
 }
 
-
 impl<K, V> Branch<K, V> {
     // Count the number of entries stored in this branch. This traverses all subnodes of the
     // branch, so it is relatively expensive.
@@ -217,19 +187,16 @@ impl<K, V> Branch<K, V> {
         self.entries.iter().map(Node::count).sum()
     }
 
-
     #[inline]
     pub fn iter(&self) -> ::std::slice::Iter<Node<K, V>> {
         self.entries.iter()
     }
-
 
     #[inline]
     pub fn iter_mut(&mut self) -> ::std::slice::IterMut<Node<K, V>> {
         self.entries.iter_mut()
     }
 }
-
 
 impl<K, V> IntoIterator for Branch<K, V> {
     type IntoIter = ::std::vec::IntoIter<Node<K, V>>;
@@ -241,7 +208,6 @@ impl<K, V> IntoIterator for Branch<K, V> {
     }
 }
 
-
 // A node in the trie. `K` must be `ToOwned` because the `Owned` version is what we store.
 #[derive(Clone, PartialEq, Eq)]
 pub enum Node<K, V> {
@@ -249,27 +215,22 @@ pub enum Node<K, V> {
     Branch(Branch<K, V>),
 }
 
-
-impl<K: fmt::Debug, V: fmt::Debug> fmt::Debug for Node<K, V>
-{
+impl<K: fmt::Debug, V: fmt::Debug> fmt::Debug for Node<K, V> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Node::Leaf(ref leaf) => {
-                f.debug_struct("Leaf")
-                    .field("key", &leaf.key)
-                    .field("val", &leaf.val)
-                    .finish()
-            }
-            Node::Branch(ref branch) => {
-                f.debug_struct("Branch")
-                    .field("choice", &branch.choice)
-                    .field("entries", &branch.entries)
-                    .finish()
-            }
+            Node::Leaf(ref leaf) => f
+                .debug_struct("Leaf")
+                .field("key", &leaf.key)
+                .field("val", &leaf.val)
+                .finish(),
+            Node::Branch(ref branch) => f
+                .debug_struct("Branch")
+                .field("choice", &branch.choice)
+                .field("entries", &branch.entries)
+                .finish(),
         }
     }
 }
-
 
 impl<K: Borrow<[u8]>, V> Node<K, V> {
     // The following `unwrap_` functions are used for (at times) efficiently circumventing the
@@ -309,7 +270,6 @@ impl<K: Borrow<[u8]>, V> Node<K, V> {
         }
     }
 
-
     #[inline]
     pub unsafe fn unwrap_branch_mut(&mut self) -> &mut Branch<K, V> {
         match *self {
@@ -317,7 +277,6 @@ impl<K: Borrow<[u8]>, V> Node<K, V> {
             Node::Branch(ref mut branch) => branch,
         }
     }
-
 
     // Borrow the associated leaf for a given key, if it exists in the trie.
     pub fn get(&self, key: &[u8]) -> Option<&Leaf<K, V>> {
@@ -329,7 +288,6 @@ impl<K: Borrow<[u8]>, V> Node<K, V> {
         }
     }
 
-
     // Mutably borrow the associated leaf for a given key, if it exists in the trie.
     pub fn get_mut(&mut self, key: &[u8]) -> Option<&mut Leaf<K, V>> {
         match *self {
@@ -339,7 +297,6 @@ impl<K: Borrow<[u8]>, V> Node<K, V> {
             Node::Branch(ref mut branch) => branch.get_mut(key),
         }
     }
-
 
     // Borrow the "exemplar" for a given key, if it exists. The exemplar is any leaf which exists
     // as a child of the same branch that the given key would be inserted into. This is necessary
@@ -356,7 +313,6 @@ impl<K: Borrow<[u8]>, V> Node<K, V> {
         }
     }
 
-
     // Mutably borrow the exemplar for a given key.
     pub fn get_exemplar_mut(&mut self, key: &[u8]) -> &mut Leaf<K, V> {
         match *self {
@@ -364,7 +320,6 @@ impl<K: Borrow<[u8]>, V> Node<K, V> {
             Node::Branch(ref mut branch) => branch.get_exemplar_mut(key),
         }
     }
-
 
     // Borrow the node which contains all and only entries with keys beginning with
     // `prefix`, assuming there exists at least one such entry.
@@ -389,21 +344,20 @@ impl<K: Borrow<[u8]>, V> Node<K, V> {
         }
     }
 
-
     // Borrow the node which contains all and only entries with keys beginning with
     // `prefix`.
     pub fn get_prefix<'a>(&'a self, prefix: &[u8]) -> Option<&'a Node<K, V>> {
         match *self {
             Node::Leaf(ref leaf) if leaf.key_slice().starts_with(prefix) => Some(self),
             Node::Branch(ref branch)
-                if branch.get_exemplar(prefix).key_slice().starts_with(prefix) => Some(
-                self.get_prefix_validated(prefix),
-            ),
+                if branch.get_exemplar(prefix).key_slice().starts_with(prefix) =>
+            {
+                Some(self.get_prefix_validated(prefix))
+            }
 
             _ => None,
         }
     }
-
 
     // Mutably borrow the node which contains all and only entries with keys beginning with
     // `prefix`, assuming there exists at least one such entry.
@@ -433,16 +387,15 @@ impl<K: Borrow<[u8]>, V> Node<K, V> {
         }
     }
 
-
     // Mutably borrow the node which contains all and only entries with keys beginning with
     // `prefix`.
     pub fn get_prefix_mut<'a>(&'a mut self, prefix: &[u8]) -> Option<&'a mut Node<K, V>> {
         match *self {
             Node::Leaf(..) => {
                 // unsafe: self has been match'd as a leaf.
-                if unsafe { self.unwrap_leaf_ref() }.key_slice().starts_with(
-                    prefix,
-                )
+                if unsafe { self.unwrap_leaf_ref() }
+                    .key_slice()
+                    .starts_with(prefix)
                 {
                     Some(self)
                 } else {
@@ -459,7 +412,6 @@ impl<K: Borrow<[u8]>, V> Node<K, V> {
                     exemplar.key_slice().starts_with(prefix)
                 };
 
-
                 if has_prefix {
                     Some(self.get_prefix_validated_mut(prefix))
                 } else {
@@ -468,7 +420,6 @@ impl<K: Borrow<[u8]>, V> Node<K, V> {
             }
         }
     }
-
 
     // Insert into the trie with a given "graft point" - the first point of nybble mismatch
     // between the key and an "exemplar" key.
@@ -519,7 +470,6 @@ impl<K: Borrow<[u8]>, V> Node<K, V> {
         &mut graft_branch.insert_leaf(Leaf::new(key, val)).val
     }
 
-
     // Insert a node into a nonempty trie.
     pub fn insert(&mut self, key: K, val: V) -> Option<V> {
         match *self {
@@ -566,7 +516,6 @@ impl<K: Borrow<[u8]>, V> Node<K, V> {
         }
     }
 
-
     // `remove_validated` assumes that it is being called on a `Node::Branch`.
     //
     // PRECONDITION:
@@ -611,7 +560,6 @@ impl<K: Borrow<[u8]>, V> Node<K, V> {
         }
     }
 
-
     // Remove a node from the trie with the given key and return its value, if it exists.
     pub fn remove(root: &mut Option<Node<K, V>>, key: &[u8]) -> Option<Leaf<K, V>> {
         match *root {
@@ -629,7 +577,6 @@ impl<K: Borrow<[u8]>, V> Node<K, V> {
             _ => None,
         }
     }
-
 
     // `remove_prefix_validated` assumes that it is being called on a `Node::Branch`, and also
     // that there exists at least one node with the given prefix.
@@ -674,7 +621,6 @@ impl<K: Borrow<[u8]>, V> Node<K, V> {
         }
     }
 
-
     // Remove the node which holds all and only elements starting with the given prefix and return
     // it, if it exists.
     pub fn remove_prefix(root: &mut Option<Node<K, V>>, prefix: &[u8]) -> Option<Node<K, V>> {
@@ -709,7 +655,6 @@ impl<K: Borrow<[u8]>, V> Node<K, V> {
     }
 }
 
-
 impl<K, V> Node<K, V> {
     pub fn count(&self) -> usize {
         match *self {
@@ -718,17 +663,14 @@ impl<K, V> Node<K, V> {
         }
     }
 
-
     pub fn iter(&self) -> Iter<K, V> {
         Iter::new(self)
     }
-
 
     pub fn iter_mut(&mut self) -> IterMut<K, V> {
         IterMut::new(self)
     }
 }
-
 
 impl<K, V> IntoIterator for Node<K, V> {
     type IntoIter = IntoIter<K, V>;

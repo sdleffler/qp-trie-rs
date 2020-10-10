@@ -1,18 +1,17 @@
 #![feature(test)]
 
 extern crate fnv;
-extern crate qptrie;
 extern crate qp_trie;
+extern crate qptrie;
 extern crate test;
 
 use fnv::FnvHashMap;
 use std::collections::{BTreeMap, HashMap};
 
-use qptrie::Trie as ExoTrie;
 use qp_trie::Trie;
+use qptrie::Trie as ExoTrie;
 
 use test::Bencher;
-
 
 #[bench]
 fn bench_trie_insert(b: &mut Bencher) {
@@ -21,13 +20,14 @@ fn bench_trie_insert(b: &mut Bencher) {
     let a = 1_234u32;
     let mut x = 0u32;
 
-    b.iter(move || for _ in 0..499_980 {
-        x = (x + a) % 499_979;
-        let key = [x as u8, (x >> 8) as u8, (x >> 16) as u8, (x >> 24) as u8];
-        trie.insert(key, ());
+    b.iter(move || {
+        for _ in 0..499_980 {
+            x = (x + a) % 499_979;
+            let key = [x as u8, (x >> 8) as u8, (x >> 16) as u8, (x >> 24) as u8];
+            trie.insert(key, ());
+        }
     });
 }
-
 
 #[bench]
 fn bench_trie_get(b: &mut Bencher) {
@@ -42,13 +42,14 @@ fn bench_trie_get(b: &mut Bencher) {
         trie.insert(key, ());
     }
 
-    b.iter(move || for _ in 0..499_979 {
-        x = (x + a) % 499_979;
-        let key = [x as u8, (x >> 8) as u8, (x >> 16) as u8, (x >> 24) as u8];
-        trie.get(&key[..]).unwrap();
+    b.iter(move || {
+        for _ in 0..499_979 {
+            x = (x + a) % 499_979;
+            let key = [x as u8, (x >> 8) as u8, (x >> 16) as u8, (x >> 24) as u8];
+            trie.get(&key[..]).unwrap();
+        }
     });
 }
-
 
 #[bench]
 fn bench_exotrie_insert(b: &mut Bencher) {
@@ -57,13 +58,14 @@ fn bench_exotrie_insert(b: &mut Bencher) {
     let a = 1_234u32;
     let mut x = 0u32;
 
-    b.iter(move || for _ in 0..499_980 {
-        x = (x + a) % 499_979;
-        let key = [x as u8, (x >> 8) as u8, (x >> 16) as u8, (x >> 24) as u8];
-        trie.insert(key, ());
+    b.iter(move || {
+        for _ in 0..499_980 {
+            x = (x + a) % 499_979;
+            let key = [x as u8, (x >> 8) as u8, (x >> 16) as u8, (x >> 24) as u8];
+            trie.insert(key, ());
+        }
     });
 }
-
 
 #[bench]
 fn bench_exotrie_get(b: &mut Bencher) {
@@ -78,13 +80,14 @@ fn bench_exotrie_get(b: &mut Bencher) {
         trie.insert(key, ());
     }
 
-    b.iter(move || for _ in 0..499_979 {
-        x = (x + a) % 499_979;
-        let key = [x as u8, (x >> 8) as u8, (x >> 16) as u8, (x >> 24) as u8];
-        trie.get(&key).unwrap();
+    b.iter(move || {
+        for _ in 0..499_979 {
+            x = (x + a) % 499_979;
+            let key = [x as u8, (x >> 8) as u8, (x >> 16) as u8, (x >> 24) as u8];
+            trie.get(&key).unwrap();
+        }
     });
 }
-
 
 #[bench]
 fn bench_btreemap_insert(b: &mut Bencher) {
@@ -93,13 +96,14 @@ fn bench_btreemap_insert(b: &mut Bencher) {
     let a = 1_234u32;
     let mut x = 0u32;
 
-    b.iter(move || for _ in 0..499_980 {
-        x = (x + a) % 499_979;
-        let key = [x as u8, (x >> 8) as u8, (x >> 16) as u8, (x >> 24) as u8];
-        trie.insert(key, ());
+    b.iter(move || {
+        for _ in 0..499_980 {
+            x = (x + a) % 499_979;
+            let key = [x as u8, (x >> 8) as u8, (x >> 16) as u8, (x >> 24) as u8];
+            trie.insert(key, ());
+        }
     });
 }
-
 
 #[bench]
 fn bench_btreemap_get(b: &mut Bencher) {
@@ -114,13 +118,14 @@ fn bench_btreemap_get(b: &mut Bencher) {
         trie.insert(key, ());
     }
 
-    b.iter(move || for _ in 0..499_979 {
-        x = (x + a) % 499_979;
-        let key = [x as u8, (x >> 8) as u8, (x >> 16) as u8, (x >> 24) as u8];
-        trie.get(&key).unwrap();
+    b.iter(move || {
+        for _ in 0..499_979 {
+            x = (x + a) % 499_979;
+            let key = [x as u8, (x >> 8) as u8, (x >> 16) as u8, (x >> 24) as u8];
+            trie.get(&key).unwrap();
+        }
     });
 }
-
 
 #[bench]
 fn bench_hashmap_insert(b: &mut Bencher) {
@@ -129,13 +134,14 @@ fn bench_hashmap_insert(b: &mut Bencher) {
     let a = 1_234u32;
     let mut x = 0u32;
 
-    b.iter(move || for _ in 0..499_980 {
-        x = (x + a) % 499_979;
-        let key = [x as u8, (x >> 8) as u8, (x >> 16) as u8, (x >> 24) as u8];
-        trie.insert(key, ());
+    b.iter(move || {
+        for _ in 0..499_980 {
+            x = (x + a) % 499_979;
+            let key = [x as u8, (x >> 8) as u8, (x >> 16) as u8, (x >> 24) as u8];
+            trie.insert(key, ());
+        }
     });
 }
-
 
 #[bench]
 fn bench_hashmap_get(b: &mut Bencher) {
@@ -150,13 +156,14 @@ fn bench_hashmap_get(b: &mut Bencher) {
         trie.insert(key, ());
     }
 
-    b.iter(move || for _ in 0..499_979 {
-        x = (x + a) % 499_979;
-        let key = [x as u8, (x >> 8) as u8, (x >> 16) as u8, (x >> 24) as u8];
-        trie.get(&key).unwrap();
+    b.iter(move || {
+        for _ in 0..499_979 {
+            x = (x + a) % 499_979;
+            let key = [x as u8, (x >> 8) as u8, (x >> 16) as u8, (x >> 24) as u8];
+            trie.get(&key).unwrap();
+        }
     });
 }
-
 
 #[bench]
 fn bench_fnvhashmap_insert(b: &mut Bencher) {
@@ -165,13 +172,14 @@ fn bench_fnvhashmap_insert(b: &mut Bencher) {
     let a = 1_234u32;
     let mut x = 0u32;
 
-    b.iter(move || for _ in 0..499_980 {
-        x = (x + a) % 499_979;
-        let key = [x as u8, (x >> 8) as u8, (x >> 16) as u8, (x >> 24) as u8];
-        trie.insert(key, ());
+    b.iter(move || {
+        for _ in 0..499_980 {
+            x = (x + a) % 499_979;
+            let key = [x as u8, (x >> 8) as u8, (x >> 16) as u8, (x >> 24) as u8];
+            trie.insert(key, ());
+        }
     });
 }
-
 
 #[bench]
 fn bench_fnvhashmap_get(b: &mut Bencher) {
@@ -186,9 +194,11 @@ fn bench_fnvhashmap_get(b: &mut Bencher) {
         trie.insert(key, ());
     }
 
-    b.iter(move || for _ in 0..499_979 {
-        x = (x + a) % 499_979;
-        let key = [x as u8, (x >> 8) as u8, (x >> 16) as u8, (x >> 24) as u8];
-        trie.get(&key).unwrap();
+    b.iter(move || {
+        for _ in 0..499_979 {
+            x = (x + a) % 499_979;
+            let key = [x as u8, (x >> 8) as u8, (x >> 16) as u8, (x >> 24) as u8];
+            trie.get(&key).unwrap();
+        }
     });
 }

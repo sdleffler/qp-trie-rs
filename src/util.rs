@@ -30,7 +30,6 @@ pub fn nybble_index(n: usize, slice: &[u8]) -> u8 {
     }
 }
 
-
 // Find the nybble at which the two provided slices mismatch. If no such nybble exists and the
 // slices are the same length, `None` is returned; if no such nybble exists but the slices are
 // *not* the same length, then the point at which one slice has a byte and the other has ended is
@@ -58,7 +57,6 @@ pub fn nybble_mismatch(left: &[u8], right: &[u8]) -> Option<usize> {
     }
 }
 
-
 #[inline]
 pub fn nybble_get_mismatch(left: &[u8], right: &[u8]) -> Option<(u8, usize)> {
     let mut difference;
@@ -83,7 +81,6 @@ pub fn nybble_get_mismatch(left: &[u8], right: &[u8]) -> Option<(u8, usize)> {
         Some((nybble_index(idx, left), idx))
     }
 }
-
 
 #[cfg(test)]
 mod test {

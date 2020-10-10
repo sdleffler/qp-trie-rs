@@ -10,7 +10,6 @@ extern crate serde;
 #[cfg(test)]
 extern crate quickcheck;
 
-
 #[cfg(feature = "serde")]
 mod serialization;
 
@@ -25,6 +24,6 @@ mod util;
 pub mod wrapper;
 
 pub use entry::{Entry, OccupiedEntry, VacantEntry};
-pub use iter::{Iter, IterMut, IntoIter};
-pub use trie::{Trie, Break};
+pub use iter::{IntoIter, Iter, IterMut};
 pub use subtrie::SubTrie;
+pub use trie::{Break, Trie};

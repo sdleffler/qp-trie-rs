@@ -13,18 +13,15 @@ pub struct Sparse<T> {
     entries: Vec<T>,
 }
 
-
 impl<T: fmt::Debug> fmt::Debug for Sparse<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
             "Sparse {{ index: {:b}, entries: {:?} }}",
-            self.index,
-            self.entries
+            self.index, self.entries
         )
     }
 }
-
 
 impl<T> Sparse<T> {
     #[inline]
@@ -35,12 +32,10 @@ impl<T> Sparse<T> {
         }
     }
 
-
     #[inline]
     pub fn len(&self) -> usize {
         self.entries.len()
     }
-
 
     // Go from a nybble-index to an index in the internal element vector.
     #[inline]
@@ -48,13 +43,11 @@ impl<T> Sparse<T> {
         (self.index & ((1 << idx) - 1)).count_ones() as usize
     }
 
-
     // Test whether or not the sparse array contains an element for the given index.
     #[inline]
     pub fn contains(&self, idx: u8) -> bool {
         self.index & (1 << idx) != 0
     }
-
 
     // Immutably borrow the corresponding element, if it exists.
     #[inline]
@@ -65,7 +58,6 @@ impl<T> Sparse<T> {
             None
         }
     }
-
 
     // Mutably borrow the corresponding element, if it exists.
     #[inline]
@@ -78,7 +70,6 @@ impl<T> Sparse<T> {
         }
     }
 
-
     // Immutably borrow the element corresponding to this index if it exists - otherwise, immutably
     // borrow an arbitrary element of the array.
     // TODO: Faster to not branch and just calculate the index and return it?
@@ -90,7 +81,6 @@ impl<T> Sparse<T> {
             &self.entries[0]
         }
     }
-
 
     // Mutably borrow the element corresponding to this index if it exists - otherwise, mutably
     // borrow an arbitrary element of the array.
@@ -105,7 +95,6 @@ impl<T> Sparse<T> {
         }
     }
 
-
     // Assuming that the array does not already contain an element for this index, insert the
     // given element.
     #[inline]
@@ -117,7 +106,6 @@ impl<T> Sparse<T> {
         &mut self.entries[i]
     }
 
-
     // Assuming that the array contains this index, remove that index and return the corresponding
     // element.
     #[inline]
@@ -128,7 +116,6 @@ impl<T> Sparse<T> {
         self.entries.remove(i)
     }
 
-
     // Clear the array, assuming it has a single element remaining, and return that element.
     #[inline]
     pub fn clear_last(&mut self) -> T {
@@ -136,19 +123,16 @@ impl<T> Sparse<T> {
         unsafe { self.entries.pop().unchecked_unwrap() }
     }
 
-
     #[inline]
     pub fn iter(&self) -> Iter<T> {
         self.entries.iter()
     }
-
 
     #[inline]
     pub fn iter_mut(&mut self) -> IterMut<T> {
         self.entries.iter_mut()
     }
 }
-
 
 impl<T> IntoIterator for Sparse<T> {
     type IntoIter = IntoIter<T>;

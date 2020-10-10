@@ -4,9 +4,8 @@ use std::mem;
 
 use unreachable::UncheckedOptionExt;
 
-use node::{Node, Leaf};
+use node::{Leaf, Node};
 use util::nybble_get_mismatch;
-
 
 pub fn make_entry<'a, K: 'a + Borrow<[u8]>, V: 'a>(
     key: K,
@@ -18,14 +17,12 @@ pub fn make_entry<'a, K: 'a + Borrow<[u8]>, V: 'a>(
     }
 }
 
-
 /// An entry - occupied or vacant - in the trie, corresponding to some given key.
 #[derive(Debug)]
 pub enum Entry<'a, K: 'a, V: 'a> {
     Vacant(VacantEntry<'a, K, V>),
     Occupied(OccupiedEntry<'a, K, V>),
 }
-
 
 impl<'a, K: 'a + Borrow<[u8]>, V: 'a> Entry<'a, K, V> {
     fn nonempty(key: K, root: &'a mut Option<Node<K, V>>) -> Entry<'a, K, V> {
@@ -45,9 +42,7 @@ impl<'a, K: 'a + Borrow<[u8]>, V: 'a> Entry<'a, K, V> {
                 Entry::vacant_nonempty(key, i, b, node)
             }
         }
-
     }
-
 
     fn occupied(leaf: *mut Leaf<K, V>, root: *mut Option<Node<K, V>>) -> Entry<'a, K, V> {
         Entry::Occupied(OccupiedEntry {
@@ -56,7 +51,6 @@ impl<'a, K: 'a + Borrow<[u8]>, V: 'a> Entry<'a, K, V> {
             root,
         })
     }
-
 
     fn vacant_nonempty(
         key: K,
@@ -70,14 +64,12 @@ impl<'a, K: 'a + Borrow<[u8]>, V: 'a> Entry<'a, K, V> {
         })
     }
 
-
     fn empty(key: K, root: &'a mut Option<Node<K, V>>) -> Entry<'a, K, V> {
         Entry::Vacant(VacantEntry {
             key,
             inner: VacantEntryInner::Root(root),
         })
     }
-
 
     /// Get a mutable reference to a value already in the trie, if it exists - otherwise, insert a
     /// given default value, and return a mutable reference to its new location in the trie.
@@ -87,7 +79,6 @@ impl<'a, K: 'a + Borrow<[u8]>, V: 'a> Entry<'a, K, V> {
             Entry::Occupied(occupied) => occupied.into_mut(),
         }
     }
-
 
     /// Get a mutable reference to a value already in the trie, if it exists - otherwise, call the
     /// provided closure to construct a new value, insert it into the trie, and then return a
@@ -99,7 +90,6 @@ impl<'a, K: 'a + Borrow<[u8]>, V: 'a> Entry<'a, K, V> {
         }
     }
 
-
     /// Get a reference to the key associated with this entry.
     pub fn key(&self) -> &K {
         match *self {
@@ -109,7 +99,6 @@ impl<'a, K: 'a + Borrow<[u8]>, V: 'a> Entry<'a, K, V> {
     }
 }
 
-
 /// A vacant entry in the trie.
 #[derive(Debug)]
 pub struct VacantEntry<'a, K: 'a, V: 'a> {
@@ -117,13 +106,11 @@ pub struct VacantEntry<'a, K: 'a, V: 'a> {
     inner: VacantEntryInner<'a, K, V>,
 }
 
-
 #[derive(Debug)]
 enum VacantEntryInner<'a, K: 'a, V: 'a> {
     Root(&'a mut Option<Node<K, V>>),
     Internal(usize, u8, &'a mut Node<K, V>),
 }
-
 
 impl<'a, K: 'a + Borrow<[u8]>, V: 'a> VacantEntry<'a, K, V> {
     /// Get a reference to the key associated with this vacant entry.
@@ -131,12 +118,10 @@ impl<'a, K: 'a + Borrow<[u8]>, V: 'a> VacantEntry<'a, K, V> {
         &self.key
     }
 
-
     /// Consume the vacant entry to produce the associated key.
     pub fn into_key(self) -> K {
         self.key
     }
-
 
     /// Insert a value into the vacant entry, returning a mutable reference to the newly inserted
     /// value.
@@ -157,7 +142,6 @@ impl<'a, K: 'a + Borrow<[u8]>, V: 'a> VacantEntry<'a, K, V> {
     }
 }
 
-
 /// An occupied entry in the trie.
 #[derive(Debug)]
 pub struct OccupiedEntry<'a, K: 'a, V: 'a> {
@@ -167,14 +151,12 @@ pub struct OccupiedEntry<'a, K: 'a, V: 'a> {
     root: *mut Option<Node<K, V>>,
 }
 
-
 impl<'a, K: 'a + Borrow<[u8]>, V: 'a> OccupiedEntry<'a, K, V> {
     /// Get a reference to the key of the entry.
     pub fn key(&self) -> &K {
         let leaf = unsafe { &*self.leaf };
         &leaf.key
     }
-
 
     /// Remove the entry from the trie, returning the stored key and value.
     pub fn remove_entry(self) -> (K, V) {
@@ -205,13 +187,11 @@ impl<'a, K: 'a + Borrow<[u8]>, V: 'a> OccupiedEntry<'a, K, V> {
         }
     }
 
-
     /// Get a reference to the value in the occupied entry.
     pub fn get(&self) -> &V {
         let leaf = unsafe { &*self.leaf };
         &leaf.val
     }
-
 
     /// Get a mutable reference to the value in the occupied entry.
     pub fn get_mut(&mut self) -> &mut V {
@@ -219,20 +199,17 @@ impl<'a, K: 'a + Borrow<[u8]>, V: 'a> OccupiedEntry<'a, K, V> {
         &mut leaf.val
     }
 
-
     /// Consume the entry to produce a mutable reference to the associated value.
     pub fn into_mut(self) -> &'a mut V {
         let leaf = unsafe { &mut *self.leaf };
         &mut leaf.val
     }
 
-
     /// Replace the associated value, returning the old one.
     pub fn insert(&mut self, val: V) -> V {
         let leaf = unsafe { &mut *self.leaf };
         mem::replace(&mut leaf.val, val)
     }
-
 
     /// Remove the entry altogether, returning the previously stored value.
     pub fn remove(self) -> V {

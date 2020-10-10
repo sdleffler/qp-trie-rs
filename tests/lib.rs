@@ -9,13 +9,11 @@ extern crate serde_json;
 
 extern crate qp_trie;
 
-
 use quickcheck::TestResult;
 use rand::seq::SliceRandom;
 use std::collections::HashMap;
 
 use qp_trie::*;
-
 
 quickcheck! {
     fn insert_and_get(elts: Vec<(u8, u64)>) -> bool {
@@ -222,7 +220,6 @@ quickcheck! {
     }
 }
 
-
 fn entry_insert_and_remove_regression(elts: Vec<(Vec<u8>, Option<u64>)>) -> bool {
     let mut hashmap = HashMap::new();
     let mut trie = Trie::new();
@@ -259,7 +256,6 @@ fn entry_insert_and_remove_regression(elts: Vec<(Vec<u8>, Option<u64>)>) -> bool
     hashmap == collected
 }
 
-
 #[test]
 fn entry_insert_and_remove_1() {
     entry_insert_and_remove_regression(vec![
@@ -268,7 +264,6 @@ fn entry_insert_and_remove_1() {
         (vec![35], Some(0)),
     ]);
 }
-
 
 #[test]
 fn entry_insert_and_remove_2() {
@@ -279,7 +274,6 @@ fn entry_insert_and_remove_2() {
     ]);
 }
 
-
 fn prefix_sets_regression(prefix: Vec<u8>, elts: Vec<(Vec<u8>, u64)>) {
     let mut trie = Trie::new();
 
@@ -287,11 +281,14 @@ fn prefix_sets_regression(prefix: Vec<u8>, elts: Vec<(Vec<u8>, u64)>) {
         trie.insert(&k[..], v);
     }
 
-    let filtered: HashMap<&[u8], u64> = trie.iter()
-        .filter_map(|(&key, &val)| if key.starts_with(&prefix[..]) {
-            Some((key, val))
-        } else {
-            None
+    let filtered: HashMap<&[u8], u64> = trie
+        .iter()
+        .filter_map(|(&key, &val)| {
+            if key.starts_with(&prefix[..]) {
+                Some((key, val))
+            } else {
+                None
+            }
         })
         .collect();
     let prefixed: HashMap<&[u8], u64> = trie.remove_prefix(&prefix[..]).into_iter().collect();
@@ -299,12 +296,10 @@ fn prefix_sets_regression(prefix: Vec<u8>, elts: Vec<(Vec<u8>, u64)>) {
     assert_eq!(filtered, prefixed);
 }
 
-
 #[test]
 fn prefix_sets_1() {
     prefix_sets_regression(vec![], vec![(vec![], 0), (vec![0], 0)]);
 }
-
 
 fn insert_and_remove_regression(elts: Vec<(Vec<u8>, Option<u64>)>) {
     let mut hashmap = HashMap::new();
@@ -328,7 +323,6 @@ fn insert_and_remove_regression(elts: Vec<(Vec<u8>, Option<u64>)>) {
     assert_eq!(hashmap, collected);
 }
 
-
 #[test]
 fn insert_and_remove_1() {
     insert_and_remove_regression(vec![
@@ -337,7 +331,6 @@ fn insert_and_remove_1() {
         (vec![62], None),
     ]);
 }
-
 
 fn insert_and_get_vec(elts: Vec<(u8, u64)>) {
     let hashmap: HashMap<u8, u64> = elts.iter().cloned().collect();
@@ -352,14 +345,8 @@ fn insert_and_get_vec(elts: Vec<(u8, u64)>) {
         trie
     };
 
-
     for (key, value) in hashmap {
-        assert_eq!(
-            trie.get(&[key]),
-            Some(&value),
-            "Sad trie: {:?}",
-            trie,
-        );
+        assert_eq!(trie.get(&[key]), Some(&value), "Sad trie: {:?}", trie,);
     }
 }
 
@@ -388,10 +375,9 @@ fn insert_and_get_5() {
     insert_and_get_vec(vec![(0, 0), (32, 9), (87, 5), (89, 26)]);
 }
 
-
 #[test]
 fn longest_common_prefix_simple() {
-    use wrapper::{BString, BStr};
+    use wrapper::{BStr, BString};
 
     let mut trie = Trie::<BString, u32>::new();
 
@@ -400,20 +386,21 @@ fn longest_common_prefix_simple() {
     trie.insert("abb".into(), 6);
     trie.insert("abc".into(), 50);
 
-    let ab_sum = trie.iter_prefix(trie.longest_common_prefix(AsRef::<BStr>::as_ref("abd"))).fold(0, |acc, (_, &v)| {
-        println!("Iterating over child: {:?}", v);
+    let ab_sum = trie
+        .iter_prefix(trie.longest_common_prefix(AsRef::<BStr>::as_ref("abd")))
+        .fold(0, |acc, (_, &v)| {
+            println!("Iterating over child: {:?}", v);
 
-        acc + v
-    });
+            acc + v
+        });
 
     println!("{}", ab_sum);
     assert_eq!(ab_sum, 5 + 6 + 50);
 }
 
-
 #[test]
 fn longest_common_prefix_complex() {
-    use wrapper::{BString, BStr};
+    use wrapper::{BStr, BString};
 
     let mut trie = Trie::<BString, u32>::new();
 
@@ -422,11 +409,13 @@ fn longest_common_prefix_complex() {
     trie.insert("abb".into(), 6);
     trie.insert("abc".into(), 50);
 
-    let ab_sum = trie.iter_prefix(trie.longest_common_prefix(AsRef::<BStr>::as_ref("abz"))).fold(0, |acc, (_, &v)| {
-        println!("Iterating over child: {:?}", v);
+    let ab_sum = trie
+        .iter_prefix(trie.longest_common_prefix(AsRef::<BStr>::as_ref("abz")))
+        .fold(0, |acc, (_, &v)| {
+            println!("Iterating over child: {:?}", v);
 
-        acc + v
-    });
+            acc + v
+        });
 
     println!("{}", ab_sum);
     assert_eq!(ab_sum, 5 + 6 + 50);
@@ -434,10 +423,10 @@ fn longest_common_prefix_complex() {
 
 #[test]
 #[cfg(feature = "serde")]
-fn serialize_max_branching_factor(){
-    let kvs = (0u16 .. 256).map(|b| {
+fn serialize_max_branching_factor() {
+    let kvs = (0u16..256).map(|b| {
         let v = b as u8;
-        let k: Vec<_> = (0 .. 32).map(|i| v.wrapping_add(i)).collect();
+        let k: Vec<_> = (0..32).map(|i| v.wrapping_add(i)).collect();
         (k, v)
     });
 
@@ -453,7 +442,7 @@ fn serialize_max_branching_factor(){
 fn serialize_pathological_branching() {
     use wrapper::BString;
 
-    let kvs = (0 .. 64).map(|length| {
+    let kvs = (0..64).map(|length| {
         let seq = vec![0; length];
         let k = String::from_utf8(seq).unwrap();
         (BString::from(k), 0)

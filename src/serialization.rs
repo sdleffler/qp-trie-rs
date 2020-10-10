@@ -4,9 +4,8 @@ use std::borrow::Borrow;
 use std::fmt;
 use std::marker::PhantomData;
 
-use serde::de::{Deserialize, Deserializer, Visitor, MapAccess};
-use serde::ser::{Serialize, Serializer, SerializeMap};
-
+use serde::de::{Deserialize, Deserializer, MapAccess, Visitor};
+use serde::ser::{Serialize, SerializeMap, Serializer};
 
 impl<K, V> Serialize for Trie<K, V>
 where
@@ -16,7 +15,7 @@ where
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
-    {   
+    {
         let mut map = serializer.serialize_map(Some(self.count()))?;
         for (k, v) in self.iter() {
             map.serialize_entry(k, v)?;
@@ -25,11 +24,9 @@ where
     }
 }
 
-
 struct TrieVisitor<K, V> {
     marker: PhantomData<fn() -> Trie<K, V>>,
 }
-
 
 impl<K, V> TrieVisitor<K, V> {
     fn new() -> Self {
@@ -38,7 +35,6 @@ impl<K, V> TrieVisitor<K, V> {
         }
     }
 }
-
 
 impl<'de, K, V> Visitor<'de> for TrieVisitor<K, V>
 where
@@ -52,7 +48,8 @@ where
     }
 
     fn visit_map<M>(self, mut access: M) -> Result<Self::Value, M::Error>
-        where M: MapAccess<'de>
+    where
+        M: MapAccess<'de>,
     {
         let mut trie = Trie::new();
         while let Some((key, value)) = access.next_entry()? {
@@ -62,7 +59,6 @@ where
         Ok(trie)
     }
 }
-
 
 impl<'de, K, V> Deserialize<'de> for Trie<K, V>
 where
