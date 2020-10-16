@@ -1,10 +1,10 @@
-use std::borrow::Borrow;
 use std::fmt;
 use std::mem;
 
 use unreachable::UncheckedOptionExt;
 
 use iter::{IntoIter, Iter, IterMut};
+use key::AsKey;
 use sparse::Sparse;
 use util::{nybble_index, nybble_mismatch};
 
@@ -22,10 +22,10 @@ impl<K, V> Leaf<K, V> {
     }
 }
 
-impl<K: Borrow<[u8]>, V> Leaf<K, V> {
+impl<K: AsKey, V> Leaf<K, V> {
     #[inline]
     pub fn key_slice(&self) -> &[u8] {
-        self.key.borrow()
+        self.key.as_nybbles()
     }
 }
 
@@ -50,7 +50,7 @@ impl<K: fmt::Debug, V: fmt::Debug> fmt::Debug for Branch<K, V> {
     }
 }
 
-impl<K: Borrow<[u8]>, V> Branch<K, V> {
+impl<K: AsKey, V> Branch<K, V> {
     // Create an empty `Branch` with the given choice point.
     #[inline]
     pub fn new(choice: usize) -> Branch<K, V> {
@@ -88,21 +88,22 @@ impl<K: Borrow<[u8]>, V> Branch<K, V> {
     // Get the child node corresponding to the given key.
     #[inline]
     pub fn child(&self, key: &[u8]) -> Option<&Node<K, V>> {
-        self.entries.get(nybble_index(self.choice, key.borrow()))
+        self.entries
+            .get(nybble_index(self.choice, key.as_nybbles()))
     }
 
     // Mutable version of `Branch::child`.
     #[inline]
     pub fn child_mut(&mut self, key: &[u8]) -> Option<&mut Node<K, V>> {
         self.entries
-            .get_mut(nybble_index(self.choice, key.borrow()))
+            .get_mut(nybble_index(self.choice, key.as_nybbles()))
     }
 
     // Immutably borrow the leaf for the given key, if it exists, mutually recursing through
     // `Node::get`.
     #[inline]
     pub fn get(&self, key: &[u8]) -> Option<&Leaf<K, V>> {
-        match self.child(key.borrow()) {
+        match self.child(key.as_nybbles()) {
             Some(child) => child.get(key),
             None => None,
         }
@@ -112,7 +113,7 @@ impl<K: Borrow<[u8]>, V> Branch<K, V> {
     // `Node::get_mut`.
     #[inline]
     pub fn get_mut(&mut self, key: &[u8]) -> Option<&mut Leaf<K, V>> {
-        self.child_mut(key.borrow())
+        self.child_mut(key.as_nybbles())
             .and_then(|node| node.get_mut(key))
     }
 
@@ -121,28 +122,28 @@ impl<K: Borrow<[u8]>, V> Branch<K, V> {
     #[inline]
     pub fn exemplar(&self, key: &[u8]) -> &Node<K, V> {
         self.entries
-            .get_or_any(nybble_index(self.choice, key.borrow()))
+            .get_or_any(nybble_index(self.choice, key.as_nybbles()))
     }
 
     // As `Branch::exemplar` but for mutable borrows.
     #[inline]
     pub fn exemplar_mut(&mut self, key: &[u8]) -> &mut Node<K, V> {
         self.entries
-            .get_or_any_mut(nybble_index(self.choice, key.borrow()))
+            .get_or_any_mut(nybble_index(self.choice, key.as_nybbles()))
     }
 
     // Immutably borrow the exemplar for the given key, mutually recursing through
     // `Node::get_exemplar`.
     #[inline]
     pub fn get_exemplar(&self, key: &[u8]) -> &Leaf<K, V> {
-        self.exemplar(key.borrow()).get_exemplar(key)
+        self.exemplar(key.as_nybbles()).get_exemplar(key)
     }
 
     // Mutably borrow the exemplar for the given key, mutually recursing through
     // `Node::get_exemplar_mut`.
     #[inline]
     pub fn get_exemplar_mut(&mut self, key: &[u8]) -> &mut Leaf<K, V> {
-        self.exemplar_mut(key.borrow()).get_exemplar_mut(key)
+        self.exemplar_mut(key.as_nybbles()).get_exemplar_mut(key)
     }
 
     // Convenience method for inserting a leaf into the branch's sparse array.
@@ -232,7 +233,7 @@ impl<K: fmt::Debug, V: fmt::Debug> fmt::Debug for Node<K, V> {
     }
 }
 
-impl<K: Borrow<[u8]>, V> Node<K, V> {
+impl<K: AsKey, V> Node<K, V> {
     // The following `unwrap_` functions are used for (at times) efficiently circumventing the
     // borrowchecker. All of them use `debug_unreachable!` internally, which means that in release,
     // a misuse can cause undefined behavior (because the tried-to-unwrap-wrong-thing code path is
@@ -445,7 +446,7 @@ impl<K: Borrow<[u8]>, V> Node<K, V> {
                 if branch.choice <= graft {
                     *self = Node::Branch(branch);
                     if let Node::Branch(ref mut branch) = *self {
-                        let index = branch.index(key.borrow());
+                        let index = branch.index(key.as_nybbles());
 
                         return if branch.has_entry(index) {
                             branch.entry_mut(index).insert_with_graft_point(
@@ -475,7 +476,10 @@ impl<K: Borrow<[u8]>, V> Node<K, V> {
         match *self {
             Node::Leaf(..) => {
                 // unsafe: self has been match'd as leaf.
-                match nybble_mismatch(unsafe { self.unwrap_leaf_ref() }.key_slice(), key.borrow()) {
+                match nybble_mismatch(
+                    unsafe { self.unwrap_leaf_ref() }.key_slice(),
+                    key.as_nybbles(),
+                ) {
                     None => Some(mem::replace(
                         &mut unsafe { self.unwrap_leaf_mut() }.val,
                         val,
@@ -499,9 +503,9 @@ impl<K: Borrow<[u8]>, V> Node<K, V> {
 
             Node::Branch(..) => {
                 let (mismatch, mismatch_nybble) = {
-                    let exemplar = self.get_exemplar_mut(key.borrow());
+                    let exemplar = self.get_exemplar_mut(key.as_nybbles());
 
-                    let mismatch_opt = nybble_mismatch(exemplar.key_slice(), key.borrow());
+                    let mismatch_opt = nybble_mismatch(exemplar.key_slice(), key.as_nybbles());
 
                     match mismatch_opt {
                         Some(mismatch) => (mismatch, nybble_index(mismatch, exemplar.key_slice())),

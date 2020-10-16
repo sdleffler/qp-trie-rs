@@ -19,22 +19,21 @@ enable compilation of `Deserialize` and `Serialize` implementations for `Trie`.
 ## When should I use a QP-trie?
 
 QP-tries as implemented in this crate are key-value maps for any keys which
-implement `Borrow<[u8]>`. They are useful whenever you might need the same
-operations as a `HashMap` or `BTreeMap`, but need either a bit more speed
-(QP-tries are as fast or a bit faster as Rust's `HashMap` with the default
-hasher) and/or the ability to efficiently query for sets of elements with a
-given prefix.
+implement `qp_trie::AsKey`, a specialized trait akin to `Borrow<[u8]>`. They
+are useful whenever you might need the same operations as a `HashMap` or
+`BTreeMap`, but need either a bit more speed (QP-tries are as fast or a bit
+faster as Rust's `HashMap` with the default hasher) and/or the ability to
+efficiently query for sets of elements with a given prefix.
 
 QP-tries support efficient lookup/insertion/removal of individual elements,
 lookup/removal of sets of values with keys with a given prefix.
 
 ## Examples
 
-Keys can be any type which implements `Borrow<[u8]>`. Unfortunately at the
-moment, this rules out `String` - while this trie can still be used to store
-strings, it is necessary to manually convert them to byte slices and `Vec<u8>`s
-for use as keys. Here's a naive, simple example of putting 9 2-element byte arrays
-into the trie, and then removing all byte arrays which begin with "1":
+Keys can be any type which implements `AsKey`. Currently, this means strings as
+well as byte slices, vectors, and arrays. Here's a naive, simple example of
+putting 9 2-element byte arrays into the trie, and then removing all byte
+arrays which begin with "1":
 
 ```rust
 use qp_trie::Trie;
@@ -134,10 +133,6 @@ test bench_hashmap_insert    ... bench:  47,771,824 ns/iter (+/- 4,979,606)
 test bench_trie_get          ... bench:  40,898,914 ns/iter (+/- 13,400,062)
 test bench_trie_insert       ... bench:  50,966,392 ns/iter (+/- 18,077,240)
 ```
-
-## Future work
-
-- Add wrapper types for `String` and `str` to make working with strings easier.
 
 ## License
 

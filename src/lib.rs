@@ -15,6 +15,7 @@ mod serialization;
 
 mod entry;
 mod iter;
+mod key;
 mod node;
 mod sparse;
 mod subtrie;
@@ -25,5 +26,6 @@ pub mod wrapper;
 
 pub use entry::{Entry, OccupiedEntry, VacantEntry};
 pub use iter::{IntoIter, Iter, IterMut};
+pub use key::{AsKey, Break};
 pub use subtrie::SubTrie;
-pub use trie::{Break, Trie};
+pub use trie::Trie;
