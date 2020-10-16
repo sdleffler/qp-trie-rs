@@ -1,3 +1,5 @@
+#![allow(deprecated)]
+
 use std::borrow::Borrow;
 use std::fmt;
 use std::hash::{Hash, Hasher};
@@ -8,6 +10,7 @@ use key::AsKey;
 /// A wrapper for `String` which implements `Borrow<[u8]>` and hashes in the same way as a byte
 /// slice.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[deprecated(since = "0.8.0", note = "use a plain `String` instead")]
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct BString(String);
 
@@ -96,6 +99,7 @@ impl Hash for BString {
 
 /// A wrapper type for `str` which implements `Borrow<[u8]>` and hashes in the same way as a byte
 /// slice.
+#[deprecated(since = "0.8.0", note = "use a plain `str` instead")]
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
 pub struct BStr(str);
 

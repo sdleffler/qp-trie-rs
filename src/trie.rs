@@ -9,6 +9,7 @@ use key::{AsKey, Break};
 use node::{Leaf, Node};
 use subtrie::SubTrie;
 use util::nybble_mismatch;
+#[allow(deprecated)]
 use wrapper::{BStr, BString};
 
 /// A QP-trie. QP stands for - depending on who you ask - either "quelques-bits popcount" or
@@ -353,6 +354,7 @@ where
     }
 }
 
+#[allow(deprecated)]
 impl<V> Trie<BString, V> {
     /// Convenience function for iterating over suffixes with a string.
     pub fn iter_prefix_str<'a, Q: ?Sized>(&self, key: &'a Q) -> Iter<BString, V>
