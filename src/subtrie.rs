@@ -35,27 +35,27 @@ impl<'a, K: 'a, V: 'a> SubTrie<'a, K, V> {
 }
 
 impl<'a, K: Borrow<[u8]>, V> SubTrie<'a, K, V> {
-    pub fn iter(&self) -> Iter<K, V> {
+    pub fn iter(&self) -> Iter<'a, K, V> {
         match self.root {
             Some(node) => node.iter(),
             None => Iter::default(),
         }
     }
 
-    pub fn iter_prefix<L: Borrow<[u8]>>(&self, prefix: L) -> Iter<K, V> {
+    pub fn iter_prefix<L: Borrow<[u8]>>(&self, prefix: L) -> Iter<'a, K, V> {
         match self.root.and_then(|node| node.get_prefix(prefix.borrow())) {
             Some(node) => node.iter(),
             None => Iter::default(),
         }
     }
 
-    pub fn subtrie<L: Borrow<[u8]>>(&self, prefix: L) -> SubTrie<K, V> {
+    pub fn subtrie<L: Borrow<[u8]>>(&self, prefix: L) -> SubTrie<'a, K, V> {
         SubTrie {
             root: self.root.and_then(|node| node.get_prefix(prefix.borrow())),
         }
     }
 
-    pub fn get<L: Borrow<[u8]>>(&self, key: L) -> Option<&V> {
+    pub fn get<L: Borrow<[u8]>>(&self, key: L) -> Option<&'a V> {
         self.root
             .and_then(|node| node.get(key.borrow()))
             .map(|leaf| &leaf.val)
