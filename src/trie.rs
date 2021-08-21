@@ -66,10 +66,16 @@ use wrapper::{BStr, BString};
 /// *subtrie.get_mut_str("bdde").unwrap() = 0;
 /// assert_eq!(subtrie.get_str("bdde"), Some(&0));
 /// ```
-#[derive(Clone, PartialEq, Eq, Default)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Trie<K, V> {
     root: Option<Node<K, V>>,
     count: usize,
+}
+
+impl<K, V> Default for Trie<K, V> {
+    fn default() -> Self {
+        Trie::new()
+    }
 }
 
 impl<K: fmt::Debug + ToOwned, V: fmt::Debug> fmt::Debug for Trie<K, V> {
