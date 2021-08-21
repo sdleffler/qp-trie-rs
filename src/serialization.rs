@@ -1,6 +1,6 @@
+use key::AsKey;
 use trie::Trie;
 
-use std::borrow::Borrow;
 use std::fmt;
 use std::marker::PhantomData;
 
@@ -9,7 +9,7 @@ use serde::ser::{Serialize, SerializeMap, Serializer};
 
 impl<K, V> Serialize for Trie<K, V>
 where
-    K: Serialize + Borrow<[u8]>,
+    K: Serialize + AsKey,
     V: Serialize,
 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -38,7 +38,7 @@ impl<K, V> TrieVisitor<K, V> {
 
 impl<'de, K, V> Visitor<'de> for TrieVisitor<K, V>
 where
-    K: Deserialize<'de> + Borrow<[u8]>,
+    K: Deserialize<'de> + AsKey,
     V: Deserialize<'de>,
 {
     type Value = Trie<K, V>;
@@ -62,7 +62,7 @@ where
 
 impl<'de, K, V> Deserialize<'de> for Trie<K, V>
 where
-    K: Deserialize<'de> + Borrow<[u8]>,
+    K: Deserialize<'de> + AsKey,
     V: Deserialize<'de>,
 {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>

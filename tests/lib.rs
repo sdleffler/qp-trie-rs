@@ -1,3 +1,5 @@
+#![allow(deprecated)]
+
 extern crate rand;
 #[macro_use]
 extern crate quickcheck;
@@ -49,6 +51,35 @@ quickcheck! {
         }
 
         return true;
+    }
+
+    fn insert_and_get_str(elts: Vec<(String, u64)>) -> bool {
+        let mut elts = elts;
+        let mut rng = rand::thread_rng();
+        elts.sort_by(|a, b| a.0.cmp(&b.0));
+        elts.dedup_by(|a, b| a.0 == b.0);
+        elts.shuffle(&mut rng);
+
+        let hashmap: HashMap<String, u64> = elts.iter().cloned().collect();
+        let trie = {
+            let mut trie = Trie::new();
+
+            for (i, (k, v)) in elts.into_iter().enumerate() {
+                assert_eq!(trie.count(), i);
+                trie.insert(k, v);
+            }
+
+            trie
+        };
+
+        let mismatch = hashmap
+            .iter()
+            .zip(trie.iter())
+            .all(|((k_h, v_h), (k_t, v_t))| {
+                trie.get(k_h) == Some(v_h) && hashmap.get(k_t) == Some(v_t)
+            });
+
+        mismatch
     }
 
     fn insert_and_remove(elts: Vec<(Vec<u8>, Option<u64>)>) -> bool {
@@ -376,8 +407,28 @@ fn insert_and_get_5() {
 }
 
 #[test]
-fn longest_common_prefix_simple() {
-    use wrapper::{BStr, BString};
+fn longest_common_prefix_complex() {
+    let mut trie = Trie::<String, u32>::new();
+
+    trie.insert("z".into(), 2);
+    trie.insert("aba".into(), 5);
+    trie.insert("abb".into(), 6);
+    trie.insert("abc".into(), 50);
+
+    let ab_sum = trie
+        .iter_prefix(trie.longest_common_prefix("abz"))
+        .fold(0, |acc, (k, &v)| {
+            println!("Iterating over pair: {:?} {:?}", k, v);
+
+            acc + v
+        });
+
+    println!("{}", ab_sum);
+    assert_eq!(ab_sum, 5 + 6 + 50);
+}
+#[test]
+fn deprecated_longest_common_prefix_simple() {
+    use wrapper::BString;
 
     let mut trie = Trie::<BString, u32>::new();
 
@@ -387,7 +438,7 @@ fn longest_common_prefix_simple() {
     trie.insert("abc".into(), 50);
 
     let ab_sum = trie
-        .iter_prefix(trie.longest_common_prefix(AsRef::<BStr>::as_ref("abd")))
+        .iter_prefix(trie.longest_common_prefix("abd"))
         .fold(0, |acc, (_, &v)| {
             println!("Iterating over child: {:?}", v);
 
@@ -399,8 +450,8 @@ fn longest_common_prefix_simple() {
 }
 
 #[test]
-fn longest_common_prefix_complex() {
-    use wrapper::{BStr, BString};
+fn deprecated_longest_common_prefix_complex() {
+    use wrapper::BString;
 
     let mut trie = Trie::<BString, u32>::new();
 
@@ -410,7 +461,7 @@ fn longest_common_prefix_complex() {
     trie.insert("abc".into(), 50);
 
     let ab_sum = trie
-        .iter_prefix(trie.longest_common_prefix(AsRef::<BStr>::as_ref("abz")))
+        .iter_prefix(trie.longest_common_prefix("abz"))
         .fold(0, |acc, (_, &v)| {
             println!("Iterating over child: {:?}", v);
 
