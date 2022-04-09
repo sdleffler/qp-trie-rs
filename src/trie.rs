@@ -1,7 +1,8 @@
-use std::borrow::Borrow;
-use std::fmt;
-use std::iter::FromIterator;
-use std::ops::{Index, IndexMut};
+use alloc::borrow::ToOwned;
+use core::borrow::Borrow;
+use core::fmt;
+use core::iter::FromIterator;
+use core::ops::{Index, IndexMut};
 
 use entry::{make_entry, Entry};
 use iter::{IntoIter, Iter, IterMut, Keys, Values, ValuesMut};

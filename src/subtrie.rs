@@ -1,6 +1,6 @@
-use std::borrow::Borrow;
-use std::fmt;
-use std::ops::Index;
+use core::borrow::Borrow;
+use core::fmt;
+use core::ops::Index;
 
 use iter::Iter;
 use node::Node;

@@ -1,3 +1,7 @@
+#![no_std]
+
+extern crate alloc;
+
 #[macro_use]
 extern crate debug_unreachable;
 extern crate unreachable;
