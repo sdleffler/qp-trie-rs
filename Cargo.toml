@@ -13,7 +13,7 @@ readme = "README.md"
 
 keywords = ["trie", "radix", "map", "key", "value"]
 
-categories = ["data-structures", "text-processing", "rust-patterns"]
+categories = ["data-structures", "text-processing", "rust-patterns", "no-std"]
 
 license = "MPL-2.0"
 

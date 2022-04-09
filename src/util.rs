@@ -1,4 +1,4 @@
-use std::cmp;
+use core::cmp;
 
 // Get the "nybble index" corresponding to the `n`th nybble in the given slice.
 //
@@ -84,6 +84,8 @@ pub fn nybble_get_mismatch(left: &[u8], right: &[u8]) -> Option<(u8, usize)> {
 
 #[cfg(test)]
 mod test {
+    use alloc::vec::Vec;
+
     use quickcheck::TestResult;
 
     use super::*;

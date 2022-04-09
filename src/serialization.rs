@@ -1,8 +1,8 @@
 use trie::Trie;
 
-use std::borrow::Borrow;
-use std::fmt;
-use std::marker::PhantomData;
+use core::borrow::Borrow;
+use core::fmt;
+use core::marker::PhantomData;
 
 use serde::de::{Deserialize, Deserializer, MapAccess, Visitor};
 use serde::ser::{Serialize, SerializeMap, Serializer};
