@@ -48,7 +48,7 @@ quickcheck! {
             }
         }
 
-        return true;
+        true
     }
 
     fn insert_and_remove(elts: Vec<(Vec<u8>, Option<u64>)>) -> bool {
@@ -190,8 +190,8 @@ quickcheck! {
         let trie: Trie<_, _> = kvs.into_iter().collect();
         let mut yielded_values: Vec<_> = trie.values().cloned().collect();
 
-        given_values.sort();
-        yielded_values.sort();
+        given_values.sort_unstable();
+        yielded_values.sort_unstable();
 
         given_values == yielded_values
     }

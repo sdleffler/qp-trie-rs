@@ -258,7 +258,7 @@ impl<K: Borrow<[u8]>, V> Trie<K, V> {
     }
 
     /// Returns true if there is an entry for the given key.
-    pub fn contains_key<'a, Q: ?Sized>(&self, key: &'a Q) -> bool
+    pub fn contains_key<Q: ?Sized>(&self, key: &Q) -> bool
     where
         K: Borrow<Q>,
         Q: Borrow<[u8]>,
@@ -325,8 +325,9 @@ impl<K: Borrow<[u8]>, V> Trie<K, V> {
         node
     }
 
-    /// Remove all elements beginning with a given prefix from the trie, producing a subtrie.
-    pub fn remove_prefix<'a, Q: ?Sized>(&mut self, prefix: &'a Q) -> Trie<K, V>
+    /// Remove all elements beginning with a given prefix from the trie, producing a subtrie
+    /// containing the removed elements.
+    pub fn remove_prefix<Q: ?Sized>(&mut self, prefix: &Q) -> Trie<K, V>
     where
         K: Borrow<Q>,
         Q: Borrow<[u8]>,
@@ -426,7 +427,7 @@ impl<V> Trie<BString, V> {
     }
 
     /// Returns true if there is an entry for the given string key.
-    pub fn contains_key_str<'a, Q: ?Sized>(&self, key: &'a Q) -> bool
+    pub fn contains_key_str<Q: ?Sized>(&self, key: &Q) -> bool
     where
         Q: Borrow<str>,
     {
@@ -450,7 +451,7 @@ impl<V> Trie<BString, V> {
     }
 
     /// Convenience function for inserting with a string.
-    pub fn insert_str<'a, Q: ?Sized>(&mut self, key: &'a Q, val: V) -> Option<V>
+    pub fn insert_str<Q: ?Sized>(&mut self, key: &Q, val: V) -> Option<V>
     where
         Q: Borrow<str>,
     {
@@ -458,7 +459,7 @@ impl<V> Trie<BString, V> {
     }
 
     /// Convenience function for removing with a string.
-    pub fn remove_str<'a, Q: ?Sized>(&mut self, key: &'a Q) -> Option<V>
+    pub fn remove_str<Q: ?Sized>(&mut self, key: &Q) -> Option<V>
     where
         Q: Borrow<str>,
     {
@@ -466,7 +467,7 @@ impl<V> Trie<BString, V> {
     }
 
     /// Convenience function for removing a prefix with a string.
-    pub fn remove_prefix_str<'a, Q: ?Sized>(&mut self, prefix: &'a Q) -> Trie<BString, V>
+    pub fn remove_prefix_str<Q: ?Sized>(&mut self, prefix: &Q) -> Trie<BString, V>
     where
         Q: Borrow<str>,
     {

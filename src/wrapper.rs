@@ -63,6 +63,7 @@ impl Borrow<[u8]> for BString {
     }
 }
 
+#[allow(clippy::derive_hash_xor_eq)]
 impl Hash for BString {
     #[inline]
     fn hash<H: Hasher>(&self, state: &mut H) {
@@ -117,6 +118,7 @@ impl Borrow<[u8]> for BStr {
     }
 }
 
+#[allow(clippy::derive_hash_xor_eq)]
 impl Hash for BStr {
     #[inline]
     fn hash<H: Hasher>(&self, state: &mut H) {
