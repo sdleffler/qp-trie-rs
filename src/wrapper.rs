@@ -52,7 +52,7 @@ impl Deref for BString {
 impl Borrow<BStr> for BString {
     #[inline]
     fn borrow(&self) -> &BStr {
-        &*self
+        self
     }
 }
 
