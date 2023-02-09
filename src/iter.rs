@@ -59,8 +59,8 @@ impl<'a, K: 'a, V: 'a> Iterator for Iter<'a, K, V> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.stack.pop() {
-            Some(&Node::Leaf(ref leaf)) => Some((leaf.key.borrow(), &leaf.val)),
-            Some(&Node::Branch(ref branch)) => {
+            Some(Node::Leaf(leaf)) => Some((leaf.key.borrow(), &leaf.val)),
+            Some(Node::Branch(branch)) => {
                 self.stack.extend(branch.iter().rev());
                 self.next()
             }
@@ -125,8 +125,8 @@ impl<'a, K: 'a, V: 'a> Iterator for Keys<'a, K, V> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.stack.pop() {
-            Some(&Node::Leaf(ref leaf)) => Some(leaf.key.borrow()),
-            Some(&Node::Branch(ref branch)) => {
+            Some(Node::Leaf(leaf)) => Some(leaf.key.borrow()),
+            Some(Node::Branch(branch)) => {
                 self.stack.extend(branch.iter().rev());
                 self.next()
             }
@@ -158,8 +158,8 @@ impl<'a, K: 'a, V: 'a> Iterator for Values<'a, K, V> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.stack.pop() {
-            Some(&Node::Leaf(ref leaf)) => Some(&leaf.val),
-            Some(&Node::Branch(ref branch)) => {
+            Some(Node::Leaf(leaf)) => Some(&leaf.val),
+            Some(Node::Branch(branch)) => {
                 self.stack.extend(branch.iter().rev());
                 self.next()
             }

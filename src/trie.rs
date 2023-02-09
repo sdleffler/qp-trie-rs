@@ -187,7 +187,7 @@ impl<K, V> Trie<K, V> {
 
 impl<K: Borrow<[u8]>, V> Trie<K, V> {
     /// Iterate over all elements with a given prefix.
-    pub fn iter_prefix<'a, Q: ?Sized>(&self, prefix: &'a Q) -> Iter<K, V>
+    pub fn iter_prefix<'a, Q: ?Sized>(&'a self, prefix: &Q) -> Iter<'a, K, V>
     where
         K: Borrow<Q>,
         Q: Borrow<[u8]>,
@@ -204,7 +204,7 @@ impl<K: Borrow<[u8]>, V> Trie<K, V> {
 
     /// Iterate over all elements with a given prefix, but given a mutable reference to the
     /// associated value.
-    pub fn iter_prefix_mut<'a, Q: ?Sized>(&mut self, prefix: &'a Q) -> IterMut<K, V>
+    pub fn iter_prefix_mut<'a, Q: ?Sized>(&'a mut self, prefix: &Q) -> IterMut<'a, K, V>
     where
         K: Borrow<Q>,
         Q: Borrow<[u8]>,
@@ -220,7 +220,7 @@ impl<K: Borrow<[u8]>, V> Trie<K, V> {
     }
 
     /// Get an immutable view into the trie, providing only values keyed with the given prefix.
-    pub fn subtrie<'a, Q: ?Sized>(&self, prefix: &'a Q) -> SubTrie<K, V>
+    pub fn subtrie<'a, Q: ?Sized>(&'a self, prefix: &Q) -> SubTrie<'a, K, V>
     where
         K: Borrow<Q>,
         Q: Borrow<[u8]>,
@@ -234,7 +234,7 @@ impl<K: Borrow<[u8]>, V> Trie<K, V> {
     }
 
     /// Get the longest common prefix of all the nodes in the trie and the given key.
-    pub fn longest_common_prefix<'a, Q: ?Sized>(&self, key: &'a Q) -> &K::Split
+    pub fn longest_common_prefix<'a, Q: ?Sized>(&'a self, key: &Q) -> &'a K::Split
     where
         K: Borrow<Q> + Break,
         Q: Borrow<[u8]>,
@@ -270,7 +270,7 @@ impl<K: Borrow<[u8]>, V> Trie<K, V> {
     }
 
     /// Get an immutable reference to the value associated with a given key, if it is in the tree.
-    pub fn get<'a, Q: ?Sized>(&self, key: &'a Q) -> Option<&V>
+    pub fn get<'a, Q: ?Sized>(&'a self, key: &Q) -> Option<&'a V>
     where
         K: Borrow<Q>,
         Q: Borrow<[u8]>,
@@ -282,7 +282,7 @@ impl<K: Borrow<[u8]>, V> Trie<K, V> {
     }
 
     /// Get a mutable reference to the value associated with a given key, if it is in the tree.
-    pub fn get_mut<'a, Q: ?Sized>(&mut self, key: &'a Q) -> Option<&mut V>
+    pub fn get_mut<'a, Q: ?Sized>(&'a mut self, key: &Q) -> Option<&'a mut V>
     where
         K: Borrow<Q>,
         Q: Borrow<[u8]>,
@@ -403,7 +403,7 @@ impl<'b> Break for &'b [u8] {
 
 impl<V> Trie<BString, V> {
     /// Convenience function for iterating over suffixes with a string.
-    pub fn iter_prefix_str<'a, Q: ?Sized>(&self, key: &'a Q) -> Iter<BString, V>
+    pub fn iter_prefix_str<'a, Q: ?Sized>(&'a self, key: &Q) -> Iter<'a, BString, V>
     where
         Q: Borrow<str>,
     {
@@ -411,7 +411,7 @@ impl<V> Trie<BString, V> {
     }
 
     /// Convenience function for iterating over suffixes with a string.
-    pub fn iter_prefix_mut_str<'a, Q: ?Sized>(&mut self, key: &'a Q) -> IterMut<BString, V>
+    pub fn iter_prefix_mut_str<'a, Q: ?Sized>(&'a mut self, key: &Q) -> IterMut<'a, BString, V>
     where
         Q: Borrow<str>,
     {
@@ -419,7 +419,7 @@ impl<V> Trie<BString, V> {
     }
 
     /// Convenience function for viewing subtries wit a string prefix.
-    pub fn subtrie_str<'a, Q: ?Sized>(&self, prefix: &'a Q) -> SubTrie<BString, V>
+    pub fn subtrie_str<'a, Q: ?Sized>(&'a self, prefix: &Q) -> SubTrie<'a, BString, V>
     where
         Q: Borrow<str>,
     {
@@ -435,7 +435,7 @@ impl<V> Trie<BString, V> {
     }
 
     /// Convenience function for getting with a string.
-    pub fn get_str<'a, Q: ?Sized>(&self, key: &'a Q) -> Option<&V>
+    pub fn get_str<'a, Q: ?Sized>(&'a self, key: &Q) -> Option<&'a V>
     where
         Q: Borrow<str>,
     {
@@ -443,7 +443,7 @@ impl<V> Trie<BString, V> {
     }
 
     /// Convenience function for getting mutably with a string.
-    pub fn get_mut_str<'a, Q: ?Sized>(&mut self, key: &'a Q) -> Option<&mut V>
+    pub fn get_mut_str<'a, Q: ?Sized>(&'a mut self, key: &Q) -> Option<&'a mut V>
     where
         Q: Borrow<str>,
     {
