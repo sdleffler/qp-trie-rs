@@ -340,7 +340,7 @@ impl<K: Borrow<[u8]>, V> Trie<K, V> {
 
     /// Get the corresponding entry for the given key.
     pub fn entry(&mut self, key: K) -> Entry<K, V> {
-        make_entry(key, &mut self.root)
+        make_entry(key, &mut self.root, &mut self.count)
     }
 }
 

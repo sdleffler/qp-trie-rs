@@ -472,3 +472,20 @@ fn issue_22_regression_remove_prefix() {
     }
     assert_eq!(trie.count(), 5);
 }
+
+#[test]
+fn issue_31_entry_count_decrement() {
+    let mut trie = Trie::new();
+
+    trie.insert_str("one", 1);
+    assert_eq!(1, trie.count());
+
+    match trie.entry("two".into()) {
+        Entry::Occupied(ent) => panic!("'two' shouldn't exist yet {:?}", ent),
+        Entry::Vacant(ent) => {
+            ent.insert(2); // doesn't update `count`
+        }
+    }
+
+    assert_eq!(2, trie.count());
+}
