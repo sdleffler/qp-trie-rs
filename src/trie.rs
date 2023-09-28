@@ -177,6 +177,7 @@ impl<K, V> Trie<K, V> {
     /// Remove all entries from the trie, leaving it empty.
     pub fn clear(&mut self) {
         self.root = None;
+        self.count = 0;
     }
 
     /// Returns true if the trie has no entries.
