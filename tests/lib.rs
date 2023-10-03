@@ -489,3 +489,12 @@ fn issue_31_entry_count_decrement() {
 
     assert_eq!(2, trie.count());
 }
+
+#[test]
+fn issue_36_node_count_after_clear() {
+    let mut trie = Trie::new();
+    trie.insert_str("one", 1);
+    assert_eq!(1, trie.count());
+    trie.clear();
+    assert_eq!(0, trie.count());
+}
