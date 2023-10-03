@@ -153,7 +153,7 @@ quickcheck! {
             trie.insert(&k[..], v);
         }
 
-        let lcp = elts.iter().fold(&[][..], |lcp, &(ref k, _)| {
+        let lcp = elts.iter().fold(&[][..], |lcp, (k, _)| {
             let mut i = 0;
 
             for (j, (b, c)) in k.iter().cloned().zip(prefix.iter().cloned()).enumerate() {

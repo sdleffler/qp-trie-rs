@@ -1,5 +1,4 @@
 use alloc::{vec, vec::Vec};
-use core::borrow::Borrow;
 
 use node::Node;
 
@@ -59,7 +58,7 @@ impl<'a, K: 'a, V: 'a> Iterator for Iter<'a, K, V> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.stack.pop() {
-            Some(Node::Leaf(leaf)) => Some((leaf.key.borrow(), &leaf.val)),
+            Some(Node::Leaf(leaf)) => Some((&leaf.key, &leaf.val)),
             Some(Node::Branch(branch)) => {
                 self.stack.extend(branch.iter().rev());
                 self.next()
@@ -92,7 +91,7 @@ impl<'a, K: 'a, V: 'a> Iterator for IterMut<'a, K, V> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.stack.pop() {
-            Some(&mut Node::Leaf(ref mut leaf)) => Some((leaf.key.borrow(), &mut leaf.val)),
+            Some(&mut Node::Leaf(ref mut leaf)) => Some((&leaf.key, &mut leaf.val)),
             Some(&mut Node::Branch(ref mut branch)) => {
                 self.stack.extend(branch.iter_mut().rev());
                 self.next()
@@ -125,7 +124,7 @@ impl<'a, K: 'a, V: 'a> Iterator for Keys<'a, K, V> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.stack.pop() {
-            Some(Node::Leaf(leaf)) => Some(leaf.key.borrow()),
+            Some(Node::Leaf(leaf)) => Some(&leaf.key),
             Some(Node::Branch(branch)) => {
                 self.stack.extend(branch.iter().rev());
                 self.next()
