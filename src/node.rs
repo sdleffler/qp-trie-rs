@@ -88,21 +88,21 @@ impl<K: Borrow<[u8]>, V> Branch<K, V> {
     // Get the child node corresponding to the given key.
     #[inline]
     pub fn child(&self, key: &[u8]) -> Option<&Node<K, V>> {
-        self.entries.get(nybble_index(self.choice, key.borrow()))
+        self.entries.get(nybble_index(self.choice, key))
     }
 
     // Mutable version of `Branch::child`.
     #[inline]
     pub fn child_mut(&mut self, key: &[u8]) -> Option<&mut Node<K, V>> {
         self.entries
-            .get_mut(nybble_index(self.choice, key.borrow()))
+            .get_mut(nybble_index(self.choice, key))
     }
 
     // Immutably borrow the leaf for the given key, if it exists, mutually recursing through
     // `Node::get`.
     #[inline]
     pub fn get(&self, key: &[u8]) -> Option<&Leaf<K, V>> {
-        match self.child(key.borrow()) {
+        match self.child(key) {
             Some(child) => child.get(key),
             None => None,
         }
@@ -112,7 +112,7 @@ impl<K: Borrow<[u8]>, V> Branch<K, V> {
     // `Node::get_mut`.
     #[inline]
     pub fn get_mut(&mut self, key: &[u8]) -> Option<&mut Leaf<K, V>> {
-        self.child_mut(key.borrow())
+        self.child_mut(key)
             .and_then(|node| node.get_mut(key))
     }
 
@@ -121,28 +121,28 @@ impl<K: Borrow<[u8]>, V> Branch<K, V> {
     #[inline]
     pub fn exemplar(&self, key: &[u8]) -> &Node<K, V> {
         self.entries
-            .get_or_any(nybble_index(self.choice, key.borrow()))
+            .get_or_any(nybble_index(self.choice, key))
     }
 
     // As `Branch::exemplar` but for mutable borrows.
     #[inline]
     pub fn exemplar_mut(&mut self, key: &[u8]) -> &mut Node<K, V> {
         self.entries
-            .get_or_any_mut(nybble_index(self.choice, key.borrow()))
+            .get_or_any_mut(nybble_index(self.choice, key))
     }
 
     // Immutably borrow the exemplar for the given key, mutually recursing through
     // `Node::get_exemplar`.
     #[inline]
     pub fn get_exemplar(&self, key: &[u8]) -> &Leaf<K, V> {
-        self.exemplar(key.borrow()).get_exemplar(key)
+        self.exemplar(key).get_exemplar(key)
     }
 
     // Mutably borrow the exemplar for the given key, mutually recursing through
     // `Node::get_exemplar_mut`.
     #[inline]
     pub fn get_exemplar_mut(&mut self, key: &[u8]) -> &mut Leaf<K, V> {
-        self.exemplar_mut(key.borrow()).get_exemplar_mut(key)
+        self.exemplar_mut(key).get_exemplar_mut(key)
     }
 
     // Convenience method for inserting a leaf into the branch's sparse array.
