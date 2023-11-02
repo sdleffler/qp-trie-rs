@@ -498,3 +498,49 @@ fn issue_36_node_count_after_clear() {
     trie.clear();
     assert_eq!(0, trie.count());
 }
+
+#[test]
+fn example_1() {
+    let mut trie = Trie::new();
+
+    for i in 0u8..3 {
+        for j in 0u8..3 {
+            trie.insert([i, j], i + j);
+        }
+    }
+
+    for i in 0u8..3 {
+        trie.remove(&[1, i]);
+    }
+
+    assert!(trie.iter().all(|(&key, _)| key[0] != 1));
+}
+
+#[test]
+fn example_2() {
+    let mut trie = Trie::new();
+
+    for i in 0u8..3 {
+        trie.extend((0u8..3).map(|j| ([i, j], i + j)));
+    }
+
+    trie.remove_prefix(&[1][..]);
+
+    assert!(trie.iter().all(|(&key, _)| key[0] != 1));
+}
+
+#[test]
+fn example_3() {
+    let mut trie = Trie::new();
+
+    for i in 0u8..3 {
+        trie.extend((0u8..3).map(|j| ([i, j], i + j)));
+    }
+
+    let mut iter = trie.iter_prefix(&[1][..]);
+
+    assert_eq!(iter.next(), Some((&[1, 0], &1)));
+    assert_eq!(iter.next(), Some((&[1, 1], &2)));
+    assert_eq!(iter.next(), Some((&[1, 2], &3)));
+    assert_eq!(iter.next(), None);
+}
