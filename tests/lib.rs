@@ -544,3 +544,62 @@ fn example_3() {
     assert_eq!(iter.next(), Some((&[1, 2], &3)));
     assert_eq!(iter.next(), None);
 }
+
+#[test]
+fn iter_rev_0() {
+    let mut trie = Trie::new();
+
+    for i in 0u8..3 {
+        trie.extend((0u8..3).map(|j| ([i, j], i + j)));
+    }
+
+    let mut iter = trie.iter().rev();
+    assert_eq!(iter.next(), Some((&[2, 2], &4)));
+    assert_eq!(iter.next(), Some((&[2, 1], &3)));
+    assert_eq!(iter.next(), Some((&[2, 0], &2)));
+    assert_eq!(iter.next(), Some((&[1, 2], &3)));
+    assert_eq!(iter.next(), Some((&[1, 1], &2)));
+    assert_eq!(iter.next(), Some((&[1, 0], &1)));
+    assert_eq!(iter.next(), Some((&[0, 2], &2)));
+    assert_eq!(iter.next(), Some((&[0, 1], &1)));
+    assert_eq!(iter.next(), Some((&[0, 0], &0)));
+    assert_eq!(iter.next(), None);
+}
+
+#[test]
+fn iter_rev_1() {
+    let mut trie = Trie::new();
+
+    for i in 0u8..3 {
+        trie.extend((0u8..3).map(|j| ([i, j], i + j)));
+    }
+
+    let mut iter = trie.iter_prefix(&[1][..]);
+
+    assert_eq!(iter.next_back(), Some((&[1, 2], &3)));
+    assert_eq!(iter.next_back(), Some((&[1, 1], &2)));
+    assert_eq!(iter.next_back(), Some((&[1, 0], &1)));
+    assert_eq!(iter.next_back(), None);
+}
+
+#[test]
+fn iter_rev_next_back_2() {
+    let mut trie = Trie::new();
+
+    for i in 0u8..3 {
+        trie.extend((0u8..3).map(|j| ([i, j], i + j)));
+    }
+
+    let mut iter = trie.iter().rev();
+    println!("{:?}", trie);
+    assert_eq!(iter.next_back(), Some((&[0, 0], &0)));
+    assert_eq!(iter.next_back(), Some((&[0, 1], &1)));
+    assert_eq!(iter.next_back(), Some((&[0, 2], &2)));
+    assert_eq!(iter.next_back(), Some((&[1, 0], &1)));
+    assert_eq!(iter.next_back(), Some((&[1, 1], &2)));
+    assert_eq!(iter.next_back(), Some((&[1, 2], &3)));
+    assert_eq!(iter.next_back(), Some((&[2, 0], &2)));
+    assert_eq!(iter.next_back(), Some((&[2, 1], &3)));
+    assert_eq!(iter.next_back(), Some((&[2, 2], &4)));
+    assert_eq!(iter.next_back(), None);
+}
