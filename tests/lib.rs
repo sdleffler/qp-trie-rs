@@ -538,7 +538,7 @@ fn example_3() {
 }
 
 #[test]
-fn iter_rev_0() {
+fn iter_rev() {
     let mut trie = Trie::new();
     for i in 0u8..3 {
         trie.extend((0u8..3).map(|j| ([i, j], i + j)));
@@ -557,7 +557,7 @@ fn iter_rev_0() {
 }
 
 #[test]
-fn iter_rev_1() {
+fn iter_next_back_0() {
     let mut trie = Trie::new();
     for i in 0u8..3 {
         trie.extend((0u8..3).map(|j| ([i, j], i + j)));
@@ -570,7 +570,7 @@ fn iter_rev_1() {
 }
 
 #[test]
-fn iter_rev_next_back_2() {
+fn iter_rev_next_back() {
     let mut trie = Trie::new();
     for i in 0u8..3 {
         trie.extend((0u8..3).map(|j| ([i, j], i + j)));
