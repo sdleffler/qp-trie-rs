@@ -35,6 +35,19 @@ impl<K, V> Iterator for IntoIter<K, V> {
     }
 }
 
+impl<K, V> DoubleEndedIterator for IntoIter<K, V> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        match self.stack.pop() {
+            Some(Node::Leaf(leaf)) => Some((leaf.key, leaf.val)),
+            Some(Node::Branch(branch)) => {
+                self.stack.extend(branch);
+                self.next_back()
+            }
+            None => None,
+        }
+    }
+}
+
 /// An iterator over immutable references to keys and values in a QP-trie.
 #[derive(Clone, Debug)]
 pub struct Iter<'a, K: 'a, V: 'a> {
@@ -62,6 +75,19 @@ impl<'a, K: 'a, V: 'a> Iterator for Iter<'a, K, V> {
             Some(Node::Branch(branch)) => {
                 self.stack.extend(branch.iter().rev());
                 self.next()
+            }
+            None => None,
+        }
+    }
+}
+
+impl<'a, K: 'a, V: 'a> DoubleEndedIterator for Iter<'a, K, V> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        match self.stack.pop() {
+            Some(Node::Leaf(leaf)) => Some((&leaf.key, &leaf.val)),
+            Some(Node::Branch(branch)) => {
+                self.stack.extend(branch.iter());
+                self.next_back()
             }
             None => None,
         }
@@ -101,6 +127,19 @@ impl<'a, K: 'a, V: 'a> Iterator for IterMut<'a, K, V> {
     }
 }
 
+impl<'a, K: 'a, V: 'a> DoubleEndedIterator for IterMut<'a, K, V> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        match self.stack.pop() {
+            Some(Node::Leaf(leaf)) => Some((&leaf.key, &mut leaf.val)),
+            Some(Node::Branch(branch)) => {
+                self.stack.extend(branch.iter_mut());
+                self.next_back()
+            }
+            None => None,
+        }
+    }
+}
+
 /// An iterator over immutable references to the keys in the QP-trie.
 #[derive(Clone, Debug)]
 pub struct Keys<'a, K: 'a, V: 'a> {
@@ -134,6 +173,18 @@ impl<'a, K: 'a, V: 'a> Iterator for Keys<'a, K, V> {
     }
 }
 
+impl<'a, K: 'a, V: 'a> DoubleEndedIterator for Keys<'a, K, V> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        match self.stack.pop() {
+            Some(Node::Leaf(leaf)) => Some(&leaf.key),
+            Some(Node::Branch(branch)) => {
+                self.stack.extend(branch.iter());
+                self.next_back()
+            }
+            None => None,
+        }
+    }
+}
 /// An iterator over immutable references to the values in the QP-trie.
 #[derive(Clone, Debug)]
 pub struct Values<'a, K: 'a, V: 'a> {
@@ -167,6 +218,19 @@ impl<'a, K: 'a, V: 'a> Iterator for Values<'a, K, V> {
     }
 }
 
+impl<'a, K: 'a, V: 'a> DoubleEndedIterator for Values<'a, K, V> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        match self.stack.pop() {
+            Some(Node::Leaf(leaf)) => Some(&leaf.val),
+            Some(Node::Branch(branch)) => {
+                self.stack.extend(branch.iter());
+                self.next_back()
+            }
+            None => None,
+        }
+    }
+}
+
 /// An iterator over mutable references to the values in the QP-trie.
 #[derive(Debug)]
 pub struct ValuesMut<'a, K: 'a, V: 'a> {
@@ -194,6 +258,19 @@ impl<'a, K: 'a, V: 'a> Iterator for ValuesMut<'a, K, V> {
             Some(&mut Node::Branch(ref mut branch)) => {
                 self.stack.extend(branch.iter_mut().rev());
                 self.next()
+            }
+            None => None,
+        }
+    }
+}
+
+impl<'a, K: 'a, V: 'a> DoubleEndedIterator for ValuesMut<'a, K, V> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        match self.stack.pop() {
+            Some(&mut Node::Leaf(ref mut leaf)) => Some(&mut leaf.val),
+            Some(&mut Node::Branch(ref mut branch)) => {
+                self.stack.extend(branch.iter_mut());
+                self.next_back()
             }
             None => None,
         }
