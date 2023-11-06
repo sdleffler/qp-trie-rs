@@ -65,7 +65,7 @@ for i in 0u8..3 {
     trie.extend((0u8..3).map(|j| ([i, j], i + j)));
 }
 
-trie.remove_prefix([1]);
+trie.remove_prefix(&[1][..]);
 
 assert!(trie.iter().all(|(&key, _)| key[0] != 1));
 ```
@@ -83,10 +83,10 @@ use qp_trie::Trie;
 let mut trie = Trie::new();
 
 for i in 0u8..3 {
-    trie.extend((0u8..3).map(|k| ([i, j], i + j)));
+    trie.extend((0u8..3).map(|j| ([i, j], i + j)));
 }
 
-let mut iter = trie.iter_prefix([1]);
+let mut iter = trie.iter_prefix(&[1][..]);
 
 assert_eq!(iter.next(), Some((&[1, 0], &1)));
 assert_eq!(iter.next(), Some((&[1, 1], &2)));
