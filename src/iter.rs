@@ -1,6 +1,6 @@
 use alloc::{vec, vec::Vec};
 
-use node::Node;
+use crate::node::Node;
 
 /// An iterator over the keys and values in a QP-trie.
 #[derive(Clone, Debug)]

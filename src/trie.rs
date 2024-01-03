@@ -4,12 +4,12 @@ use core::fmt;
 use core::iter::FromIterator;
 use core::ops::{Index, IndexMut};
 
-use entry::{make_entry, Entry};
-use iter::{IntoIter, Iter, IterMut, Keys, Values, ValuesMut};
-use node::{Leaf, Node};
-use subtrie::SubTrie;
-use util::nybble_mismatch;
-use wrapper::{BStr, BString};
+use crate::entry::{make_entry, Entry};
+use crate::iter::{IntoIter, Iter, IterMut, Keys, Values, ValuesMut};
+use crate::node::{Leaf, Node};
+use crate::subtrie::SubTrie;
+use crate::util::nybble_mismatch;
+use crate::wrapper::{BStr, BString};
 
 /// A QP-trie. QP stands for - depending on who you ask - either "quelques-bits popcount" or
 /// "quad-bit popcount". In any case, the fact of the matter is that this is a compressed radix

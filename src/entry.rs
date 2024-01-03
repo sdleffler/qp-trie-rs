@@ -2,10 +2,8 @@ use core::borrow::Borrow;
 use core::marker::PhantomData;
 use core::mem;
 
-use unreachable::UncheckedOptionExt;
-
-use node::{Leaf, Node};
-use util::nybble_get_mismatch;
+use crate::node::{Leaf, Node};
+use crate::util::nybble_get_mismatch;
 
 pub fn make_entry<'a, K: 'a + Borrow<[u8]>, V: 'a>(
     key: K,
@@ -28,7 +26,7 @@ pub enum Entry<'a, K: 'a, V: 'a> {
 impl<'a, K: 'a + Borrow<[u8]>, V: 'a> Entry<'a, K, V> {
     fn nonempty(key: K, root: &'a mut Option<Node<K, V>>, count: &'a mut usize) -> Entry<'a, K, V> {
         let (exemplar_ptr, mismatch) = {
-            let node = unsafe { root.as_mut().unchecked_unwrap() };
+            let node = unsafe { root.as_mut().unwrap_unchecked() };
             let exemplar = node.get_exemplar_mut(key.borrow());
             let mismatch = nybble_get_mismatch(exemplar.key_slice(), key.borrow());
             (exemplar as *mut Leaf<K, V>, mismatch)
@@ -38,7 +36,7 @@ impl<'a, K: 'a + Borrow<[u8]>, V: 'a> Entry<'a, K, V> {
             None => Entry::occupied(exemplar_ptr, root as *mut Option<Node<K, V>>, count),
 
             Some((b, i)) => {
-                let node = unsafe { root.as_mut().unchecked_unwrap() };
+                let node = unsafe { root.as_mut().unwrap_unchecked() };
 
                 Entry::vacant_nonempty(key, i, b, node, count)
             }
@@ -143,7 +141,7 @@ impl<'a, K: 'a + Borrow<[u8]>, V: 'a> VacantEntry<'a, K, V> {
 
                 *root = Some(Node::Leaf(Leaf::new(self.key, val)));
                 let root_mut_opt = root.as_mut();
-                let leaf_mut = unsafe { root_mut_opt.unchecked_unwrap().unwrap_leaf_mut() };
+                let leaf_mut = unsafe { root_mut_opt.unwrap_unchecked().unwrap_leaf_mut() };
                 &mut leaf_mut.val
             }
             VacantEntryInner::Internal(graft, graft_nybble, node) => {
@@ -177,7 +175,7 @@ impl<'a, K: 'a + Borrow<[u8]>, V: 'a> OccupiedEntry<'a, K, V> {
         match *root {
             Some(Node::Leaf(_)) => {
                 let leaf_opt = root.take();
-                let leaf = unsafe { leaf_opt.unchecked_unwrap().unwrap_leaf() };
+                let leaf = unsafe { leaf_opt.unwrap_unchecked().unwrap_leaf() };
 
                 debug_assert!(leaf.key_slice() == self.key().borrow());
                 (leaf.key, leaf.val)
@@ -185,12 +183,12 @@ impl<'a, K: 'a + Borrow<[u8]>, V: 'a> OccupiedEntry<'a, K, V> {
 
             Some(Node::Branch(_)) => {
                 let branch_opt = root.as_mut();
-                let branch = unsafe { branch_opt.unchecked_unwrap() };
+                let branch = unsafe { branch_opt.unwrap_unchecked() };
 
                 let leaf_opt = branch.remove_validated(self.key().borrow());
 
                 debug_assert!(leaf_opt.is_some());
-                let leaf = unsafe { leaf_opt.unchecked_unwrap() };
+                let leaf = unsafe { leaf_opt.unwrap_unchecked() };
 
                 (leaf.key, leaf.val)
             }
