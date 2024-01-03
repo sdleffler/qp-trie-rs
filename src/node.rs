@@ -76,6 +76,16 @@ impl<K: Borrow<[u8]>, V> Branch<K, V> {
         self.entries.contains(index)
     }
 
+    /// Corresponds to the key-value pair at this position.
+    #[inline]
+    pub fn head_entry(&self) -> Option<&Leaf<K, V>> {
+        match self.entries.get(0) {
+            Some(Node::Leaf(leaf)) => Some(leaf),
+            None => None,
+            _ => unsafe { debug_unreachable!() },
+        }
+    }
+
     #[inline]
     pub fn entry_mut(&mut self, index: u8) -> &mut Node<K, V> {
         let entry = self.entries.get_mut(index);
@@ -87,6 +97,13 @@ impl<K: Borrow<[u8]>, V> Branch<K, V> {
     #[inline]
     pub fn child(&self, key: &[u8]) -> Option<&Node<K, V>> {
         self.entries.get(nybble_index(self.choice, key))
+    }
+
+    // Get the child node corresponding to the given key.
+    #[inline]
+    pub fn child_with_offsetted_key(&self, key: &[u8], key_offset: usize) -> Option<&Node<K, V>> {
+        self.entries
+            .get(nybble_index(self.choice.checked_sub(key_offset * 2)?, key))
     }
 
     // Mutable version of `Branch::child`.
@@ -119,6 +136,18 @@ impl<K: Borrow<[u8]>, V> Branch<K, V> {
         self.entries.get_or_any(nybble_index(self.choice, key))
     }
 
+    // Retrieve the node which contains the exemplar. This does not recurse and return the actual
+    // exemplar - just the node which might be or contain it.
+    #[inline]
+    pub fn exemplar_with_offset(&self, key: &[u8], key_offset: usize) -> &Node<K, V> {
+        self.entries.get_or_any(
+            self.choice
+                .checked_sub(key_offset * 2)
+                .map(|choice| nybble_index(choice, key))
+                .unwrap_or_default(),
+        )
+    }
+
     // As `Branch::exemplar` but for mutable borrows.
     #[inline]
     pub fn exemplar_mut(&mut self, key: &[u8]) -> &mut Node<K, V> {
@@ -130,6 +159,12 @@ impl<K: Borrow<[u8]>, V> Branch<K, V> {
     #[inline]
     pub fn get_exemplar(&self, key: &[u8]) -> &Leaf<K, V> {
         self.exemplar(key).get_exemplar(key)
+    }
+
+    #[inline]
+    pub fn get_exemplar_with_offset(&self, key: &[u8], key_offset: usize) -> &Leaf<K, V> {
+        self.exemplar_with_offset(key, key_offset)
+            .get_exemplar_with_offset(key, key_offset)
     }
 
     // Mutably borrow the exemplar for the given key, mutually recursing through
@@ -307,6 +342,13 @@ impl<K: Borrow<[u8]>, V> Node<K, V> {
         }
     }
 
+    pub fn get_exemplar_with_offset(&self, key: &[u8], key_offset: usize) -> &Leaf<K, V> {
+        match *self {
+            Node::Leaf(ref leaf) => leaf,
+            Node::Branch(ref branch) => branch.get_exemplar_with_offset(key, key_offset),
+        }
+    }
+
     // Mutably borrow the exemplar for a given key.
     pub fn get_exemplar_mut(&mut self, key: &[u8]) -> &mut Leaf<K, V> {
         match *self {
@@ -320,19 +362,23 @@ impl<K: Borrow<[u8]>, V> Node<K, V> {
     //
     // PRECONDITION:
     // - There exists at least one node in the trie with the given prefix.
-    pub fn get_prefix_validated<'a>(&'a self, prefix: &[u8]) -> &'a Node<K, V> {
+    pub fn get_prefix_validated<'a>(
+        &'a self,
+        prefix: &[u8],
+        prefix_offset: usize,
+    ) -> &'a Node<K, V> {
         match *self {
             Node::Leaf(..) => self,
             Node::Branch(ref branch) => {
-                if branch.choice >= prefix.len() * 2 {
+                if branch.choice >= (prefix.len() + prefix_offset) * 2 {
                     self
                 } else {
-                    let child_opt = branch.child(prefix);
+                    let child_opt = branch.child_with_offsetted_key(prefix, prefix_offset);
 
                     // unsafe: child must exist in the trie - prefix'd nodes must exist.
                     let child = unsafe { child_opt.unwrap_unchecked() };
 
-                    child.get_prefix_validated(prefix)
+                    child.get_prefix_validated(prefix, prefix_offset)
                 }
             }
         }
@@ -346,7 +392,31 @@ impl<K: Borrow<[u8]>, V> Node<K, V> {
             Node::Branch(ref branch)
                 if branch.get_exemplar(prefix).key_slice().starts_with(prefix) =>
             {
-                Some(self.get_prefix_validated(prefix))
+                Some(self.get_prefix_validated(prefix, 0))
+            }
+
+            _ => None,
+        }
+    }
+
+    // Borrow the node which contains all and only entries with keys continuing with
+    // `prefix`.
+    pub fn get_prefix_with_offset<'a>(
+        &'a self,
+        prefix: &[u8],
+        prefix_offset: usize,
+    ) -> Option<&'a Node<K, V>> {
+        match *self {
+            Node::Leaf(ref leaf) if leaf.key_slice()[prefix_offset..].starts_with(prefix) => {
+                Some(self)
+            }
+            Node::Branch(ref branch)
+                if branch
+                    .get_exemplar_with_offset(prefix, prefix_offset)
+                    .key_slice()[prefix_offset..]
+                    .starts_with(prefix) =>
+            {
+                Some(self.get_prefix_validated(prefix, prefix_offset))
             }
 
             _ => None,

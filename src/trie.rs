@@ -226,12 +226,12 @@ impl<K: Borrow<[u8]>, V> Trie<K, V> {
         K: Borrow<Q>,
         Q: Borrow<[u8]>,
     {
-        SubTrie {
-            root: self
-                .root
-                .as_ref()
-                .and_then(|node| node.get_prefix(prefix.borrow())),
-        }
+        let root = match self.root {
+            Some(ref node) => node,
+            None => return SubTrie::empty(),
+        };
+        let node = root.get_prefix(prefix.borrow());
+        SubTrie::new(node, prefix.borrow().len())
     }
 
     /// Get the longest common prefix of all the nodes in the trie and the given key.

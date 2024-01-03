@@ -90,6 +90,13 @@ impl Break for BString {
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
 pub struct BStr(str);
 
+impl BStr {
+    #[inline]
+    pub fn ref_str(s: &str) -> &BStr {
+        <&BStr>::from(s)
+    }
+}
+
 impl fmt::Debug for BStr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.0.fmt(f)
@@ -112,6 +119,13 @@ impl ToOwned for BStr {
 }
 
 impl Borrow<[u8]> for BStr {
+    #[inline]
+    fn borrow(&self) -> &[u8] {
+        self.0.as_bytes()
+    }
+}
+
+impl Borrow<[u8]> for &'_ BStr {
     #[inline]
     fn borrow(&self) -> &[u8] {
         self.0.as_bytes()
