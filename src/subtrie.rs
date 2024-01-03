@@ -73,6 +73,7 @@ impl<'a, K: Borrow<[u8]>, V> SubTrie<'a, K, V> {
     }
 
     /// Gets the value at the root of the subtrie.
+    /// Only returns a value if we're at the end of the key.
     pub fn get_value(&self) -> Option<&'a V> {
         self.root
             .and_then(|node| match node {
