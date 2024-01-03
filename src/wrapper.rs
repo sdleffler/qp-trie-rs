@@ -5,7 +5,7 @@ use core::fmt;
 use core::hash::{Hash, Hasher};
 use core::ops::Deref;
 
-use trie::Break;
+use crate::trie::Break;
 
 /// A wrapper for `String` which implements `Borrow<[u8]>` and hashes in the same way as a byte
 /// slice.

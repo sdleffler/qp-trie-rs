@@ -2,7 +2,7 @@
 authors = ["Sean Leffler <sean@errno.com>"]
 name = "qp-trie"
 version = "0.8.2"
-
+edition = "2021"
 description = "An idiomatic and fast QP-trie implementation in pure Rust, written with an emphasis on safety."
 
 documentation = "https://docs.rs/qp-trie"
@@ -23,7 +23,6 @@ travis-ci = { repository = "sdleffler/qp-trie-rs", branch = "master" }
 [dependencies]
 new_debug_unreachable = "1.0.1"
 serde = { version = "1.0.11", optional = true, features = ["derive"] }
-unreachable = "1.0.0"
 
 [dev-dependencies]
 bincode = "1.0"
