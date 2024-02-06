@@ -2,7 +2,7 @@
 authors = ["Sean Leffler <sean@errno.com>"]
 name = "qp-trie"
 version = "0.8.2"
-
+edition = "2021"
 description = "An idiomatic and fast QP-trie implementation in pure Rust, written with an emphasis on safety."
 
 documentation = "https://docs.rs/qp-trie"
@@ -21,14 +21,13 @@ license = "MPL-2.0"
 travis-ci = { repository = "sdleffler/qp-trie-rs", branch = "master" }
 
 [dependencies]
-new_debug_unreachable = "1.0.1"
-serde = { version = "1.0.11", optional = true, features = ["derive"] }
-unreachable = "1.0.0"
+new_debug_unreachable = "1.0.4"
+serde = { version = "1.0", optional = true, features = ["derive"] }
 
 [dev-dependencies]
 bincode = "1.0"
-fnv = "1.0.5"
+fnv = "1.0.7"
 qptrie = "0.2.2"
-quickcheck = "0.9"
-rand = "0.7"
-serde_json = "1.0.3"
+quickcheck = "1.0.3"
+rand = "0.8"
+serde_json = "1.0"

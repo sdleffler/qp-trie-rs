@@ -498,3 +498,71 @@ fn issue_36_node_count_after_clear() {
     trie.clear();
     assert_eq!(0, trie.count());
 }
+
+#[test]
+fn issue_40_subtree_api_extension_base() {
+    use wrapper::{BStr, BString};
+
+    let mut trie = Trie::<BString, u32>::new();
+    trie.insert("abc".into(), 1);
+    trie.insert("a".into(), 99);
+    trie.insert("abcd".into(), 2);
+    trie.insert("abcde".into(), 3);
+    assert_eq!(
+        trie.subtrie(BStr::ref_str("abc")).get(BStr::ref_str("abc")),
+        Some(&1)
+    );
+    assert_eq!(
+        trie.subtrie(BStr::ref_str("abc"))
+            .get(BStr::ref_str("abcd")),
+        Some(&2)
+    );
+    assert_eq!(
+        trie.subtrie(BStr::ref_str("abcd"))
+            .get(BStr::ref_str("abc")),
+        None
+    );
+    assert_eq!(
+        trie.subtrie(BStr::ref_str("abcd"))
+            .get(BStr::ref_str("abcd")),
+        Some(&2)
+    );
+    assert_eq!(
+        trie.subtrie(BStr::ref_str("abcde"))
+            .get(BStr::ref_str("abcde")),
+        Some(&3)
+    );
+    assert_eq!(trie.subtrie(BStr::ref_str("abcde")).is_empty(), false);
+    assert_eq!(trie.subtrie(BStr::ref_str("abcdef")).is_empty(), true);
+}
+
+#[test]
+fn issue_40_subtree_api_extension_step() {
+    use wrapper::{BStr, BString};
+
+    let mut trie = Trie::<BString, u32>::new();
+    trie.insert("abc".into(), 1);
+    trie.insert("a".into(), 99);
+    trie.insert("abcd".into(), 2);
+    trie.insert("abcde".into(), 3);
+    assert_eq!(trie.subtrie(BStr::ref_str("a")).get_value(), Some(&99));
+    assert_eq!(
+        trie.subtrie(BStr::ref_str("a"))
+            .subtrie(BStr::ref_str("b"))
+            .get_value(),
+        None
+    );
+    assert_eq!(
+        trie.subtrie(BStr::ref_str("a"))
+            .subtrie(BStr::ref_str("bcd"))
+            .get_value(),
+        Some(&2)
+    );
+    assert_eq!(
+        trie.subtrie(BStr::ref_str("a"))
+            .subtrie(BStr::ref_str("b"))
+            .subtrie(BStr::ref_str("c"))
+            .get(BStr::ref_str("abcd")),
+        Some(&2)
+    );
+}
